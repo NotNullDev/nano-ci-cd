@@ -1,2 +1,1 @@
-echo "hello from build script!"
-docker build -t gitea.notnulldev.com/notnulldev/nnd .
+docker build -t $CONTAINER_REGISTRY_URL/$CONTAINER_REGISTRY_USERNAME/$APP_NAME .

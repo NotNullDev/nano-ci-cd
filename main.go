@@ -74,6 +74,8 @@ func build(c echo.Context) error {
 		})
 	}
 
+	os.Setenv("APP_NAME", buildArguments.AppName)
+
 	envs, err := config.ParseEnvFiles(false, "envs/"+buildArguments.AppName)
 
 	if err != nil {

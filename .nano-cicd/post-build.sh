@@ -1,6 +1,6 @@
 CI_COMMIT_SHA=$(git rev-parse --short HEAD)
 
-docker tag gitea.notnulldev.com/notnulldev/nnd:latest gitea.notnulldev.com/notnulldev/nnd:$CI_COMMIT_SHA
+docker tag $CONTAINER_REGISTRY_URL/$CONTAINER_REGISTRY_USERNAME/$APP_NAME:latest $CONTAINER_REGISTRY_URL/$CONTAINER_REGISTRY_USERNAME/$APP_NAME:$CI_COMMIT_SHA
 
-docker push gitea.notnulldev.com/notnulldev/nnd:$CI_COMMIT_SHA
-docker push gitea.notnulldev.com/notnulldev/nnd:latest
+docker push $CONTAINER_REGISTRY_URL/$CONTAINER_REGISTRY_USERNAME/$APP_NAME:$CI_COMMIT_SHA
+docker push $CONTAINER_REGISTRY_URL/$CONTAINER_REGISTRY_USERNAME/$APP_NAME:latest
