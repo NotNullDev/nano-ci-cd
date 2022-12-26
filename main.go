@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cd/config"
 	"errors"
 	"fmt"
 	"log"
@@ -15,14 +16,30 @@ const (
 	configFolder = ".nano-cicd"
 )
 
+var (
+	globalEnv = make(map[string]string)
+)
+
+func init() {
+	env, err := config.ParseEnvFiles(false, "envs/.global")
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	globalEnv = env
+
+	config.LoadEnvs(env)
+}
+
 type BuildArguments struct {
 	RepoUrl string `json:"repoUrl"`
+	AppName string `json:"appName"`
 	// DockerfilePath           string   `json:"dockerfilePath"`
 	// PreDeployScriptLocation  string   `json:"preDeployScriptLocation"`
 	// DeployScriptLocation     string   `json:"deployScriptLocation"`
 	// PostDeployScriptLocation string   `json:"postDeployScriptLocation"`
 	// EnvFileNames             []string `json:"envFileNames"`
-	// AppName                  string   `json:"appName"`
 }
 
 type ErrorResponse struct {
@@ -34,7 +51,9 @@ func main() {
 
 	e.POST("/build", build)
 
-	e.Start(":8080")
+	if err := e.Start(":8080"); err != nil {
+		panic(err.Error())
+	}
 }
 
 func build(c echo.Context) error {
@@ -47,6 +66,15 @@ func build(c echo.Context) error {
 			Error: err.Error(),
 		})
 	}
+
+	envs, err := config.ParseEnvFiles(false, "envs/"+buildArguments.AppName)
+
+	if err != nil {
+		return c.JSON(400, ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+	config.LoadEnvs(envs)
 
 	err = cloneRepo(buildArguments.RepoUrl)
 
