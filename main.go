@@ -103,10 +103,10 @@ func build(c echo.Context) error {
 			println("Can't parse repository")
 		} else {
 			println(fmt.Sprintf("Parsed value clone_url: [%s]", a))
-			cloneUrl, ok := a.(map[string]interface{})
+			cloneUrl, ok := a["clone_url"].(string)
 
 			if ok {
-				println(fmt.Sprintf("Parsed value clone_url: [%s]", &cloneUrl))
+				println(fmt.Sprintf("Parsed value clone_url: [%s]", cloneUrl))
 			} else {
 				println("Failed to parse repo url")
 			}
