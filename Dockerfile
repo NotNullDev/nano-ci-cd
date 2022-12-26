@@ -35,7 +35,7 @@ COPY --from=builder /app/server /app/server
 
 EXPOSE 3000
 
-COPY envs /app/envs
+COPY envs/ /app/envs/
 
 CMD ["/app/server"]
 
