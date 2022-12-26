@@ -100,6 +100,7 @@ func build(c echo.Context) error {
 	}
 	config.LoadEnvs(envs)
 
+	envs["APP_NAME"] = buildArguments.AppName
 	prepareBuildArgs(envs)
 
 	err = cloneRepo(buildArguments.RepoUrl)
