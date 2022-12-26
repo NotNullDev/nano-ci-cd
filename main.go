@@ -52,7 +52,10 @@ type ErrorResponse struct {
 func main() {
 	e := echo.New()
 
-	e.Use(middleware.BodyDump(middleware.DefaultBodyDumpConfig.Handler))
+	e.Use(middleware.BodyDump(func(ctx echo.Context, b1, b2 []byte) {
+		println(string(b1))
+		println(string(b2))
+	}))
 
 	e.POST("/build", build)
 
