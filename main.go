@@ -96,6 +96,25 @@ func build(c echo.Context) error {
 	buildArguments.AppName = argsMap["appName"].(string)
 	buildArguments.RepoUrl = argsMap["repoUrl"].(string)
 
+	if argsMap["repository"] != nil {
+		a, ok := argsMap["repository"].(map[string]interface{})
+
+		if !ok {
+			println("Can't parse repository")
+		} else {
+			println(fmt.Sprintf("Parsed value clone_url: [%s]", a))
+			cloneUrl, ok := a.(map[string]interface{})
+
+			if ok {
+				println(fmt.Sprintf("Parsed value clone_url: [%s]", &cloneUrl))
+			} else {
+				println("Failed to parse repo url")
+			}
+		}
+	} else {
+		println("Missing repository")
+	}
+
 	os.Setenv("APP_NAME", buildArguments.AppName)
 
 	envs, err := config.ParseEnvFiles(false, "envs/"+buildArguments.AppName)
