@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 const (
@@ -51,11 +50,6 @@ type ErrorResponse struct {
 
 func main() {
 	e := echo.New()
-
-	e.Use(middleware.BodyDump(func(ctx echo.Context, b1, b2 []byte) {
-		println(string(b1))
-		println(string(b2))
-	}))
 
 	e.POST("/build", build)
 
