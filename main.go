@@ -92,7 +92,6 @@ func build(c echo.Context) error {
 			RepoUrl: giteaArgs.Repository.CloneURL,
 			AppName: giteaArgs.Repository.Name,
 		}
-
 	}
 
 	println(fmt.Printf("%v", buildArguments))
