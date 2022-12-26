@@ -1,8 +1,8 @@
 # Required things
 
 - [ ] Instant rollback
-- [ ] Pre deploy scripts
-- [ ] Post deploy script
+- [x] Pre deploy scripts
+- [x] Post deploy script
 - [ ] Dockerfile
 - [ ] Deploy script
 - [ ] Build logs
