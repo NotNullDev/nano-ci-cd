@@ -84,10 +84,13 @@ func build(c echo.Context) error {
 	}
 	fmt.Printf("%v", giteaArgs)
 
-	buildArguments.AppName = giteaArgs.Repository.CloneURL
-	buildArguments.AppName = giteaArgs.Repository.Name
+	buildArguments = BuildArguments{
+		RepoUrl: giteaArgs.Repository.CloneURL,
+		AppName: giteaArgs.Repository.Name,
+	}
 
 	println(giteaArgs)
+	println(buildArguments)
 
 	os.Setenv("APP_NAME", buildArguments.AppName)
 	envs, err := config.ParseEnvFiles(false, "envs/"+buildArguments.AppName)
