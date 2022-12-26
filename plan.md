@@ -16,7 +16,6 @@ UI:
     auth with github
     add repo url
     add app name
-    add app name
 
 Server:
     get dockerfile
