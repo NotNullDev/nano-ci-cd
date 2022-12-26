@@ -23,7 +23,7 @@ var (
 )
 
 func init() {
-	env, err := config.ParseEnvFiles(false, "envs/.global")
+	env, err := config.ParseEnvFiles(false, "/app/envs/.global")
 
 	if err != nil {
 		panic(err.Error())
@@ -63,6 +63,7 @@ func main() {
 }
 
 func build(c echo.Context) error {
+	os.Chdir("/app")
 	println(fmt.Sprintf("Build started at %v", time.Now()))
 	var buildArguments BuildArguments
 
@@ -91,7 +92,7 @@ func build(c echo.Context) error {
 	println(fmt.Printf("%v", buildArguments))
 
 	os.Setenv("APP_NAME", buildArguments.AppName)
-	envs, err := config.ParseEnvFiles(false, "envs/"+buildArguments.AppName)
+	envs, err := config.ParseEnvFiles(false, "/app/envs/"+buildArguments.AppName)
 
 	if err != nil {
 		return c.JSON(400, ErrorResponse{
