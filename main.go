@@ -2,6 +2,7 @@ package main
 
 import (
 	"cd/config"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -74,7 +75,7 @@ func build(c echo.Context) error {
 
 	argsMap := make(map[string]interface{})
 
-	err := c.Bind(&argsMap)
+	err := json.NewDecoder(c.Request().Body).Decode(&argsMap)
 
 	if err != nil {
 		return c.JSON(400, ErrorResponse{
