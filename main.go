@@ -82,16 +82,19 @@ func build(c echo.Context) error {
 			Error: err.Error(),
 		})
 	}
-	println(argsMap)
+	fmt.Printf("%v", argsMap)
 
-	err = c.Bind(&buildArguments)
+	// err = c.Bind(&buildArguments)
 
-	// buildArguments.RepoUrl = argsMap[""].(string)
-	if err != nil {
-		return c.JSON(400, ErrorResponse{
-			Error: err.Error(),
-		})
-	}
+	// // buildArguments.RepoUrl = argsMap[""].(string)
+	// if err != nil {
+	// 	return c.JSON(400, ErrorResponse{
+	// 		Error: err.Error(),
+	// 	})
+	// }
+
+	buildArguments.AppName = argsMap["appName"].(string)
+	buildArguments.RepoUrl = argsMap["repoUrl"].(string)
 
 	os.Setenv("APP_NAME", buildArguments.AppName)
 
