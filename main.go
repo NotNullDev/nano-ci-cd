@@ -74,7 +74,7 @@ func build(c echo.Context) error {
 
 	argsMap := make(map[string]interface{})
 
-	err := c.Bind(argsMap)
+	err := c.Bind(&argsMap)
 
 	if err != nil {
 		return c.JSON(400, ErrorResponse{
