@@ -15,7 +15,7 @@ RUN go mod download
 COPY . .
 
 # Build the binary.
-RUN go build -v -o server main.go
+RUN go build -v -o server .
 
 
 # Use the official Debian slim image for a lean production container.

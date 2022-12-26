@@ -2,7 +2,6 @@ package main
 
 import (
 	"cd/config"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -73,24 +72,30 @@ func build(c echo.Context) error {
 	println(fmt.Sprintf("Build started at %v", time.Now()))
 	var buildArguments BuildArguments
 
-	var giteaArgs GiteaHook
+	if dev := os.Getenv("DEV_MODE"); dev != "" {
+		buildArguments = BuildArguments{
+			RepoUrl: "https://gitea.notnulldev.com/notnulldev/nano-ci-cd",
+			AppName: "nano-ci-cd",
+		}
+	} else {
+		var giteaArgs GiteaHook
 
-	err := json.NewDecoder(c.Request().Body).Decode(&giteaArgs)
+		err := c.Bind(&giteaArgs)
 
-	if err != nil {
-		return c.JSON(400, ErrorResponse{
-			Error: err.Error(),
-		})
+		if err != nil {
+			return c.JSON(400, ErrorResponse{
+				Error: err.Error(),
+			})
+		}
+
+		buildArguments = BuildArguments{
+			RepoUrl: giteaArgs.Repository.CloneURL,
+			AppName: giteaArgs.Repository.Name,
+		}
+
 	}
-	fmt.Printf("%v", giteaArgs)
 
-	buildArguments = BuildArguments{
-		RepoUrl: giteaArgs.Repository.CloneURL,
-		AppName: giteaArgs.Repository.Name,
-	}
-
-	println(giteaArgs)
-	println(buildArguments)
+	println(fmt.Printf("%v", buildArguments))
 
 	os.Setenv("APP_NAME", buildArguments.AppName)
 	envs, err := config.ParseEnvFiles(false, "envs/"+buildArguments.AppName)
