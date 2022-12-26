@@ -100,6 +100,8 @@ func build(c echo.Context) error {
 	}
 	config.LoadEnvs(envs)
 
+	prepareBuildArgs(envs)
+
 	err = cloneRepo(buildArguments.RepoUrl)
 
 	if err != nil {
@@ -135,6 +137,16 @@ func build(c echo.Context) error {
 	println(fmt.Sprintf("Build ended at %v", time.Now()))
 
 	return c.JSON(200, "")
+}
+
+func prepareBuildArgs(envs map[string]string) {
+	result := ""
+
+	for key := range envs {
+		result = result + " --build-arg " + key + " "
+	}
+
+	os.Setenv("DOCKER_BUILD_ARGS", result)
 }
 
 func runPreBuildScript() error {
