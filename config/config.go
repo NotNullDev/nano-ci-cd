@@ -64,15 +64,16 @@ func ParseEnvFiles(failOnMissingEnvFile bool, envFilePath ...string) (map[string
 
 			splitted := strings.Split(line, "=")
 
-			if len(splitted) != 2 {
-				return nil, fmt.Errorf("could not parse line %d in file [%s]", lineNumber, filePath)
-			}
+			// fails when AA=something?aa=bb
+			// if len(splitted) != 2 {
+			// 	return nil, fmt.Errorf("could not parse line %d in file [%s]", lineNumber, filePath)
+			// }
 
 			envKey := splitted[0]
 			envKey = strings.Replace(envKey, "export", "", -1)
 			envKey = strings.TrimSpace(envKey)
 
-			envVal := splitted[1]
+			envVal := strings.Join(splitted[1:], "")
 			envVal = strings.Replace(envVal, "\"", "", -1)
 			envVal = strings.Replace(envVal, "'", "", -1)
 			envVal = strings.Replace(envVal, "`", "", -1)
