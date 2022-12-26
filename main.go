@@ -72,13 +72,17 @@ func build(c echo.Context) error {
 	println(fmt.Sprintf("Build started at %v", time.Now()))
 	var buildArguments BuildArguments
 
-	err := c.Bind(&buildArguments)
+	argsMap := make(map[string]interface{})
+
+	err := c.Bind(argsMap)
 
 	if err != nil {
 		return c.JSON(400, ErrorResponse{
 			Error: err.Error(),
 		})
 	}
+	println(argsMap)
+	// buildArguments.RepoUrl = argsMap[""].(string)
 
 	os.Setenv("APP_NAME", buildArguments.AppName)
 
