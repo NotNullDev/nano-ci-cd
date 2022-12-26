@@ -56,7 +56,7 @@ func build(c echo.Context) error {
 		})
 	}
 
-	err = runPreDeployScript()
+	err = runPreBuildScript()
 
 	if err != nil {
 		return c.JSON(400, ErrorResponse{
@@ -64,9 +64,15 @@ func build(c echo.Context) error {
 		})
 	}
 
-	runDeployScript()
+	err = runBuildScript()
 
-	err = runPostDeployScript()
+	if err != nil {
+		return c.JSON(400, ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	err = runPostBuildScript()
 
 	if err != nil {
 		return c.JSON(400, ErrorResponse{
@@ -77,35 +83,35 @@ func build(c echo.Context) error {
 	return c.JSON(200, "")
 }
 
-func runPreDeployScript() error {
-	_, err := os.Stat(fmt.Sprintf("./%s/pre-deploy.sh", configFolder))
+func runPreBuildScript() error {
+	_, err := os.Stat(fmt.Sprintf("./%s/pre-build.sh", configFolder))
 
 	if err != nil {
-		log.Println("Could not read pre-deploy.sh script.")
+		log.Println("Could not read pre-build.sh script.")
 		return nil
 	}
-	return executeCommand(fmt.Sprintf("bash ./%s/pre-deploy.sh", configFolder))
+	return executeCommand(fmt.Sprintf("bash ./%s/pre-build.sh", configFolder))
 }
 
-func runDeployScript() error {
-	_, err := os.Stat(fmt.Sprintf("./%s/deploy.sh", configFolder))
+func runBuildScript() error {
+	_, err := os.Stat(fmt.Sprintf("./%s/build.sh", configFolder))
 
 	if err != nil {
-		log.Println("Could not read deploy.sh script.")
+		log.Println("Could not read build.sh script.")
 		return nil
 	}
 
-	return executeCommand(fmt.Sprintf("bash ./%s/deploy.sh", configFolder))
+	return executeCommand(fmt.Sprintf("bash ./%s/build.sh", configFolder))
 }
 
-func runPostDeployScript() error {
-	_, err := os.Stat(fmt.Sprintf("./%s/post-deploy.sh", configFolder))
+func runPostBuildScript() error {
+	_, err := os.Stat(fmt.Sprintf("./%s/post-build.sh", configFolder))
 
 	if err != nil {
-		log.Println("Could not read post-deploy.sh script.")
+		log.Println("Could not read post-build.sh script.")
 		return nil
 	}
-	return executeCommand(fmt.Sprintf("bash ./%s/post-deploy.sh", configFolder))
+	return executeCommand(fmt.Sprintf("bash ./%s/post-build.sh", configFolder))
 }
 
 func executeCommand(command string) error {
