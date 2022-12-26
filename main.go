@@ -8,12 +8,14 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
 
 const (
-	configFolder = ".nano-cicd"
+	configFolder          = ".nano-cicd"
+	latestShaShortCommand = "git rev-parse --short HEAD"
 )
 
 var (
@@ -51,12 +53,17 @@ func main() {
 
 	e.POST("/build", build)
 
+	e.HTTPErrorHandler = func(err error, ctx echo.Context) {
+		println(err.Error() + " at " + time.Now().String())
+	}
+
 	if err := e.Start(":8080"); err != nil {
 		panic(err.Error())
 	}
 }
 
 func build(c echo.Context) error {
+	println(fmt.Sprintf("Build started at %v", time.Now()))
 	var buildArguments BuildArguments
 
 	err := c.Bind(&buildArguments)
@@ -107,6 +114,8 @@ func build(c echo.Context) error {
 			Error: err.Error(),
 		})
 	}
+
+	println(fmt.Sprintf("Build ended at %v", time.Now()))
 
 	return c.JSON(200, "")
 }
