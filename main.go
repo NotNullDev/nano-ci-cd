@@ -73,50 +73,23 @@ func build(c echo.Context) error {
 	println(fmt.Sprintf("Build started at %v", time.Now()))
 	var buildArguments BuildArguments
 
-	argsMap := make(map[string]interface{})
+	var giteaArgs GiteaHook
 
-	err := json.NewDecoder(c.Request().Body).Decode(&argsMap)
+	err := json.NewDecoder(c.Request().Body).Decode(&giteaArgs)
 
 	if err != nil {
 		return c.JSON(400, ErrorResponse{
 			Error: err.Error(),
 		})
 	}
-	fmt.Printf("%v", argsMap)
+	fmt.Printf("%v", giteaArgs)
 
-	// err = c.Bind(&buildArguments)
+	buildArguments.AppName = giteaArgs.Repository.CloneURL
+	buildArguments.AppName = giteaArgs.Repository.Name
 
-	// // buildArguments.RepoUrl = argsMap[""].(string)
-	// if err != nil {
-	// 	return c.JSON(400, ErrorResponse{
-	// 		Error: err.Error(),
-	// 	})
-	// }
-
-	buildArguments.AppName = argsMap["appName"].(string)
-	buildArguments.RepoUrl = argsMap["repoUrl"].(string)
-
-	if argsMap["repository"] != nil {
-		a, ok := argsMap["repository"].(map[string]interface{})
-
-		if !ok {
-			println("Can't parse repository")
-		} else {
-			println(fmt.Sprintf("Parsed value clone_url: [%s]", a))
-			cloneUrl, ok := a["clone_url"].(string)
-
-			if ok {
-				println(fmt.Sprintf("Parsed value clone_url: [%s]", cloneUrl))
-			} else {
-				println("Failed to parse repo url")
-			}
-		}
-	} else {
-		println("Missing repository")
-	}
+	println(giteaArgs)
 
 	os.Setenv("APP_NAME", buildArguments.AppName)
-
 	envs, err := config.ParseEnvFiles(false, "envs/"+buildArguments.AppName)
 
 	if err != nil {
