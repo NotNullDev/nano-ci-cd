@@ -1,3 +1,4 @@
 builds
 envs/*
 !.gitkeep
+apps.db
