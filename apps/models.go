@@ -10,9 +10,8 @@ type NanoConfig struct {
 }
 
 type NanoApp struct {
-	gorm.Model        `json:"-"`
-	AppId             int64  `json:"appId"`
-	AppName           string `json:"appName"`
+	gorm.Model
+	AppName           string `json:"appName" gorm="unique"`
 	AppStatus         string `json:"appStatus"`
 	EnvVal            string `json:"envVal"`
 	EnvMountPath      string `json:"envMountPath"`
@@ -40,7 +39,7 @@ type ErrorResponse struct {
 }
 
 type NanoContext struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 	Apps       []NanoApp  `json:"apps"`
 	NanoConfig NanoConfig `json:"nanoConfig"`
 }

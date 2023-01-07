@@ -44,6 +44,13 @@ func (db AppsDb) AutoMigrateModels() error {
 func (db AppsDb) InitConfig() error {
 	token := uuid.NewString()
 
+	var any NanoContext
+	db.First(&any)
+
+	if any.ID != 0 {
+		return nil
+	}
+
 	tx := db.Create(&NanoContext{
 		Apps: []NanoApp{},
 		NanoConfig: NanoConfig{

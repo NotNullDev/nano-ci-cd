@@ -11,8 +11,6 @@ import (
 const (
 	latestShaShortCommand = "git rev-parse --short HEAD"
 	baseContainerFolder   = "/app"
-	buildSecret           = "Qg28syo36sZmnUbpSshKBDbY2wUepp1zXVi5CG6nTyA="
-	appSecret             = "shFOAaPW91HkfFd/1SccVGo7aKUV5Zu4MDwEBRgi6pc="
 )
 
 var (
@@ -53,13 +51,20 @@ func main() {
 		Db:   db,
 	}
 
-	e.POST("/build", app.HandlePostRequest)
+	// dashboard
 	e.GET("/", app.GetNanoContext)
 	e.POST("/reset-token", app.ResetToken)
 	e.POST("/update-global-env", app.UpdateGlobalEnvironment)
+	e.POST("/create-app", app.CreateApp)
+	e.POST("/update-app", app.UpdateApp)
+	e.POST("/delete-app", app.UpdateApp)
+
+	// build trigger
+	e.POST("/build", app.HandlePostRequest)
 
 	e.HTTPErrorHandler = func(err error, ctx echo.Context) {
 		println(err.Error() + " at " + time.Now().String())
+		ctx.JSON(500, err.Error())
 	}
 
 	if err := e.Start(":8080"); err != nil {
