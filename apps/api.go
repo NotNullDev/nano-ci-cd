@@ -161,7 +161,7 @@ func (appCtx AppContext) UpdateApp(c echo.Context) error {
 }
 
 func (appCtx AppContext) DeleteApp(c echo.Context) error {
-	appId := c.Param("id")
+	appId := c.QueryParam("id")
 
 	if appId == "" {
 		return c.JSON(400, ErrorResponse{

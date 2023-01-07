@@ -57,7 +57,7 @@ func main() {
 	e.POST("/update-global-env", app.UpdateGlobalEnvironment)
 	e.POST("/create-app", app.CreateApp)
 	e.POST("/update-app", app.UpdateApp)
-	e.POST("/delete-app", app.UpdateApp)
+	e.DELETE("/delete-app", app.DeleteApp)
 
 	// build trigger
 	e.POST("/build", app.HandlePostRequest)
