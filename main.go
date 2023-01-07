@@ -9,7 +9,6 @@ import (
 )
 
 const (
-	configFolder          = ".nano-cicd"
 	latestShaShortCommand = "git rev-parse --short HEAD"
 	baseContainerFolder   = "/app"
 	buildSecret           = "Qg28syo36sZmnUbpSshKBDbY2wUepp1zXVi5CG6nTyA="
@@ -33,7 +32,6 @@ func init() {
 }
 
 func main() {
-
 	db, err := apps.NewAppsDatabase()
 
 	if err != nil {
@@ -42,15 +40,23 @@ func main() {
 
 	db.AutoMigrateModels()
 
-	e := echo.New()
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			cc := &apps.CustomContext{Echo: c, Db: db}
-			return next(cc)
-		}
-	})
+	err = db.InitConfig()
 
-	e.POST("/build", apps.HandlePostRequest)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	e := echo.New()
+
+	app := apps.AppContext{
+		Echo: e,
+		Db:   db,
+	}
+
+	e.POST("/build", app.HandlePostRequest)
+	e.GET("/", app.GetNanoContext)
+	e.POST("/reset-token", app.ResetToken)
+	e.POST("/update-global-env", app.UpdateGlobalEnvironment)
 
 	e.HTTPErrorHandler = func(err error, ctx echo.Context) {
 		println(err.Error() + " at " + time.Now().String())

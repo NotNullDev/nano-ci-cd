@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -15,7 +16,7 @@ func NewAppsDatabase() (*AppsDb, error) {
 		return nil, err
 	}
 
-	return &AppsDb{DB: databaseConn}, nil
+	return &AppsDb{databaseConn}, nil
 }
 
 func (db AppsDb) AutoMigrateModels() error {
@@ -25,5 +26,31 @@ func (db AppsDb) AutoMigrateModels() error {
 		return err
 	}
 
+	err = db.AutoMigrate(&NanoConfig{})
+
+	if err != nil {
+		return err
+	}
+
+	err = db.AutoMigrate(&NanoContext{})
+
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (db AppsDb) InitConfig() error {
+	token := uuid.NewString()
+
+	tx := db.Create(&NanoContext{
+		Apps: []NanoApp{},
+		NanoConfig: NanoConfig{
+			GlobalEnvironment: "",
+			Token:             token,
+		},
+	})
+
+	return tx.Error
 }

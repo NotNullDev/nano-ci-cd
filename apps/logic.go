@@ -26,6 +26,10 @@ func Build(buildArguments BuildArguments) error {
 
 	err := prepareEnvAndBuildArguments(buildArguments)
 
+	if err != nil {
+		return err
+	}
+
 	err = cloneRepo(buildArguments.RepoUrl)
 
 	if err != nil {
@@ -66,6 +70,9 @@ func executeDockerComposeFileIfConfigured(appName string) error {
 
 func prepareEnvAndBuildArguments(buildArguments BuildArguments) error {
 	os.Setenv("APP_NAME", buildArguments.AppName)
+
+	// TODO: get config from db
+
 	envs, err := config.ParseEnvFiles(false, "/app/envs/"+buildArguments.AppName)
 
 	if err != nil {
