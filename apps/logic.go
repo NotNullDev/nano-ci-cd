@@ -208,9 +208,7 @@ func loadBase64EnvFileIntoEnv(buildContext context.Context, db *AppsDb) error {
 	app := mustGetAppFromContext(buildContext)
 
 	if app.EnvVal != "" {
-		encoded := base64.RawStdEncoding.EncodeToString([]byte(app.EnvVal))
-
-		err := os.Setenv("BASE_64_ENV_FILE", encoded)
+		err := os.Setenv("BASE_64_ENV_FILE", app.EnvVal)
 
 		if err != nil {
 			return err
