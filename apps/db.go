@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/glebarez/sqlite"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -44,7 +43,7 @@ func (db AppsDb) AutoMigrateModels() error {
 }
 
 func (db AppsDb) InitConfig() error {
-	token := uuid.NewString()
+	token := "62285a21-547d-46db-a9fd-a2fec5161da5" // hardcoded initial token on both server and client
 
 	var any NanoContext
 	db.First(&any)
