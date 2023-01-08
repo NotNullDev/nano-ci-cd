@@ -51,17 +51,20 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 		})
 	}
 
-	var app NanoApp
-	// TODO: get config from db
-	tx = appCtx.Db.Model(&NanoApp{
+	app := NanoApp{
 		AppName: appName,
-	}).First(&app)
+	}
+
+	// TODO: get config from db
+	tx = appCtx.Db.First(&app, "app_name = ?", appName)
 
 	if tx.Error != nil {
 		return c.JSON(400, ErrorResponse{
 			Error: tx.Error.Error(),
 		})
 	}
+
+	print("Found app name " + app.AppName)
 
 	if app.AppStatus != "enabled" {
 		return c.JSON(400, ErrorResponse{
