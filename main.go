@@ -3,6 +3,7 @@ package main
 import (
 	"cd/apps"
 	"cd/config"
+	"log"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -41,6 +42,25 @@ func main() {
 	e := echo.New()
 
 	e.Use(middleware.CORS())
+	e.Use(middleware.Secure())
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			var config apps.NanoConfig
+			db.First(&config)
+
+			h := c.Request().Header
+			key := h.Get("Authorization")
+
+			if key != config.Token {
+				log.Printf("invalid token: %s", key)
+				return c.JSON(403, apps.ErrorResponse{
+					Error: "invalid token",
+				})
+			}
+
+			return next(c)
+		}
+	})
 
 	app := apps.AppContext{
 		Echo: e,
