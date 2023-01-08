@@ -62,6 +62,12 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 		})
 	}
 
+	if app.AppStatus != "enabled" {
+		return c.JSON(400, ErrorResponse{
+			Error: "app is disabled",
+		})
+	}
+
 	c.JSON(200, "")
 	buildContext := context.Background()
 	buildContext = context.WithValue(buildContext, contextKey, &app)
