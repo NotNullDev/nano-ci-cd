@@ -21,6 +21,10 @@ type AppsApi struct {
 	*echo.Echo
 }
 
+type ContextKey string
+
+var contextKey ContextKey = "app"
+
 func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 	var appConfig NanoConfig
 
@@ -60,7 +64,7 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 
 	c.JSON(200, "")
 	buildContext := context.Background()
-	buildContext = context.WithValue(buildContext, "app", &app)
+	buildContext = context.WithValue(buildContext, contextKey, &app)
 
 	err := loadGlobalEnvs(appConfig)
 

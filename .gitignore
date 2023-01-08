@@ -2,3 +2,4 @@ builds
 envs/*
 !.gitkeep
 apps.db
+main

@@ -181,7 +181,7 @@ func cloneRepo(buildContext context.Context) error {
 		return err
 	}
 
-	cmd := exec.Command("git", "clone", app.AppName, ".")
+	cmd := exec.Command("git", "clone", app.RepoUrl, ".")
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -219,8 +219,8 @@ func loadBase64EnvFileIntoEnv(buildContext context.Context, db *AppsDb) error {
 	return nil
 }
 
-func mustGetAppFromContext(ctx context.Context) NanoApp {
-	app, ok := ctx.Value("app").(NanoApp)
+func mustGetAppFromContext(ctx context.Context) *NanoApp {
+	app, ok := ctx.Value(contextKey).(*NanoApp)
 
 	if !ok {
 		panic("could not get app from context")
