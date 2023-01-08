@@ -10,3 +10,8 @@ echo mounted file:
 
 ls .mounted
 cat .mounted
+
+echo mounted env file:
+echo $BASE_64_ENV_FILE
+echo $BASE_64_ENV_FILE | base64 -d > .env
+cat .env

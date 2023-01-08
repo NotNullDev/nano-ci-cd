@@ -21,12 +21,13 @@ BASE_64_ENV_FILE
 - [ ] Instant rollback
 - [x] Pre deploy scripts
 - [x] Post deploy script
+- [x] UI
+- [ ] Restore from sqlite backup
 - [ ] Dockerfile
 - [ ] Deploy script
 - [ ] Build logs
 - [ ] App logs
 - [ ] Cron jobs
-- [ ] UI
 
 
 Priority:
