@@ -6,15 +6,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-)
-
-const (
-	latestShaShortCommand = "git rev-parse --short HEAD"
-	baseContainerFolder   = "/app"
-)
-
-var (
-	globalEnv = make(map[string]string)
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func init() {
@@ -23,8 +15,6 @@ func init() {
 	if err != nil {
 		panic(err.Error())
 	}
-
-	globalEnv = env
 
 	config.LoadEnvs(env)
 }
@@ -36,7 +26,11 @@ func main() {
 		panic(err.Error())
 	}
 
-	db.AutoMigrateModels()
+	err = db.AutoMigrateModels()
+
+	if err != nil {
+		panic(err.Error())
+	}
 
 	err = db.InitConfig()
 
@@ -45,6 +39,8 @@ func main() {
 	}
 
 	e := echo.New()
+
+	e.Use(middleware.CORS())
 
 	app := apps.AppContext{
 		Echo: e,

@@ -11,13 +11,14 @@ type NanoConfig struct {
 
 type NanoApp struct {
 	gorm.Model
-	AppName           string `json:"appName" gorm="unique"`
+	AppName           string `json:"appName" gorm:"unique"`
 	AppStatus         string `json:"appStatus"`
 	EnvVal            string `json:"envVal"`
 	EnvMountPath      string `json:"envMountPath"`
 	BuildVal          string `json:"buildVal"`
 	BuildValMountPath string `json:"buildValMountPath"`
 	RepoUrl           string `json:"repoUrl"`
+	RepoBranch        string `json:"repoBranch"`
 	NanoContextID     uint   `json:"-"`
 
 	// ComposeRepoUrl              string `json:"composeRepoUrl"`

@@ -2,6 +2,8 @@ package apps
 
 import (
 	"cd/config"
+	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -15,22 +17,20 @@ const (
 	configFolder          = ".nano-cicd"
 	latestShaShortCommand = "git rev-parse --short HEAD"
 	baseContainerFolder   = "/app"
-	buildSecret           = "Qg28syo36sZmnUbpSshKBDbY2wUepp1zXVi5CG6nTyA="
-	appSecret             = "shFOAaPW91HkfFd/1SccVGo7aKUV5Zu4MDwEBRgi6pc="
 )
 
-func Build(buildArguments BuildArguments) error {
+func Build(buildContext context.Context, db *AppsDb) error {
 	os.Chdir(baseContainerFolder)
 
 	println(fmt.Sprintf("Build started at %v", time.Now()))
 
-	err := prepareEnvAndBuildArguments(buildArguments)
+	err := cloneRepo(buildContext)
 
 	if err != nil {
 		return err
 	}
 
-	err = cloneRepo(buildArguments.RepoUrl)
+	err = prepareEnvAndBuildArguments(buildContext, db)
 
 	if err != nil {
 		return err
@@ -48,13 +48,19 @@ func Build(buildArguments BuildArguments) error {
 		return err
 	}
 
+	err = loadBase64EnvFileIntoEnv(buildContext, db)
+
+	if err != nil {
+		return err
+	}
+
 	err = runPostBuildScript()
 
 	if err != nil {
 		return err
 	}
 
-	err = executeDockerComposeFileIfConfigured(buildArguments.AppName)
+	err = executeDockerComposeFileIfConfigured(buildContext)
 
 	if err != nil {
 		return err
@@ -64,16 +70,23 @@ func Build(buildArguments BuildArguments) error {
 	return nil
 }
 
-func executeDockerComposeFileIfConfigured(appName string) error {
+func executeDockerComposeFileIfConfigured(buildContext context.Context) error {
 	return nil
 }
 
-func prepareEnvAndBuildArguments(buildArguments BuildArguments) error {
-	os.Setenv("APP_NAME", buildArguments.AppName)
+func prepareEnvAndBuildArguments(buildContext context.Context, db *AppsDb) error {
+	app := mustGetAppFromContext(buildContext)
+	os.Setenv("APP_NAME", app.AppName)
 
-	// TODO: get config from db
+	decoded, err := base64.RawStdEncoding.DecodeString(app.BuildVal)
 
-	envs, err := config.ParseEnvFiles(false, "/app/envs/"+buildArguments.AppName)
+	if err != nil {
+		return err
+	}
+
+	splitted := strings.Split(string(decoded), "\n")
+
+	envs, err := config.ParseEnvLines(splitted)
 
 	if err != nil {
 		return err
@@ -81,8 +94,16 @@ func prepareEnvAndBuildArguments(buildArguments BuildArguments) error {
 
 	config.LoadEnvs(envs)
 
-	envs["APP_NAME"] = buildArguments.AppName
+	envs["APP_NAME"] = app.AppName
 	prepareBuildArgs(envs)
+
+	if app.BuildValMountPath != "" {
+		err := os.WriteFile(app.BuildValMountPath, []byte(decoded), 0777)
+		if err != nil {
+			return err
+		}
+	}
+
 	return err
 }
 
@@ -144,8 +165,10 @@ func executeCommand(command string) error {
 	return err
 }
 
-func cloneRepo(repoUrl string) error {
+func cloneRepo(buildContext context.Context) error {
+	app := mustGetAppFromContext(buildContext)
 	os.Mkdir("builds", 0777)
+
 	folderName, err := os.MkdirTemp("builds", "source-*")
 
 	if err != nil {
@@ -158,7 +181,7 @@ func cloneRepo(repoUrl string) error {
 		return err
 	}
 
-	cmd := exec.Command("git", "clone", repoUrl, ".")
+	cmd := exec.Command("git", "clone", app.AppName, ".")
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -169,5 +192,39 @@ func cloneRepo(repoUrl string) error {
 		return err
 	}
 
+	if app.RepoBranch != "" {
+		err = executeCommand(fmt.Sprintf("git checkout %s", app.RepoBranch))
+
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func loadBase64EnvFileIntoEnv(buildContext context.Context, db *AppsDb) error {
+	app := mustGetAppFromContext(buildContext)
+
+	if app.EnvVal != "" {
+		encoded := base64.RawStdEncoding.EncodeToString([]byte(app.EnvVal))
+
+		err := os.Setenv("BASE_64_ENV_FILE", encoded)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func mustGetAppFromContext(ctx context.Context) NanoApp {
+	app, ok := ctx.Value("app").(NanoApp)
+
+	if !ok {
+		panic("could not get app from context")
+	}
+
+	return app
 }

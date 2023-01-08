@@ -1,10 +1,12 @@
 package apps
 
 import (
+	"cd/config"
+	"context"
 	"encoding/base64"
 	"io"
-	"os"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -20,31 +22,54 @@ type AppsApi struct {
 }
 
 func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
-	var buildArguments BuildArguments
+	var appConfig NanoConfig
 
-	if dev := os.Getenv("DEV_MODE"); dev != "" {
-		buildArguments = BuildArguments{
-			RepoUrl: "https://gitea.notnulldev.com/notnulldev/nano-ci-cd",
-			AppName: "nano-ci-cd",
-		}
-	} else {
-		var giteaArgs GiteaHook
+	tx := appCtx.Db.First(&appConfig)
 
-		err := c.Bind(&giteaArgs)
-
-		if err != nil {
-			return c.JSON(400, ErrorResponse{
-				Error: err.Error(),
-			})
-		}
-
-		buildArguments = BuildArguments{
-			RepoUrl: giteaArgs.Repository.CloneURL,
-			AppName: giteaArgs.Repository.Name,
-		}
+	if tx.Error != nil {
+		return c.JSON(400, ErrorResponse{
+			Error: tx.Error.Error(),
+		})
 	}
 
-	err := Build(buildArguments)
+	if appConfig.Token != c.Request().Header.Get("Authorization") {
+		return c.JSON(403, ErrorResponse{
+			Error: "invalid token",
+		})
+	}
+
+	appName := c.QueryParam("appName")
+
+	if appName == "" {
+		return c.JSON(400, ErrorResponse{
+			Error: "missing appName",
+		})
+	}
+
+	var app NanoApp
+	// TODO: get config from db
+	tx = appCtx.Db.Model(&NanoApp{
+		AppName: appName,
+	}).First(&app)
+
+	if tx.Error != nil {
+		return c.JSON(400, ErrorResponse{
+			Error: tx.Error.Error(),
+		})
+	}
+
+	c.JSON(200, "")
+	buildContext := context.Background()
+	buildContext = context.WithValue(buildContext, "app", &app)
+
+	err := loadGlobalEnvs(appConfig)
+
+	if err != nil {
+		return c.JSON(400, ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+	err = Build(buildContext, appCtx.Db)
 
 	if err != nil {
 		return c.JSON(400, ErrorResponse{
@@ -52,7 +77,7 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(200, "")
+	return nil
 }
 
 func (appCtx AppContext) GetNanoContext(c echo.Context) error {
@@ -124,6 +149,7 @@ func (appCtx AppContext) CreateApp(c echo.Context) error {
 	app := &NanoApp{
 		AppName:       req.AppName,
 		NanoContextID: 1,
+		AppStatus:     "enabled",
 	}
 
 	tx := appCtx.Db.Create(app)
@@ -186,4 +212,23 @@ func (appCtx AppContext) DeleteApp(c echo.Context) error {
 	}
 
 	return c.JSON(200, idAsInt)
+}
+
+func loadGlobalEnvs(appConfig NanoConfig) error {
+	decoded, err := base64.RawStdEncoding.DecodeString(appConfig.GlobalEnvironment)
+
+	if err != nil {
+		return err
+	}
+
+	splitted := strings.Split(string(decoded), "\n")
+
+	envs, err := config.ParseEnvLines(splitted)
+
+	if err != nil {
+		return err
+	}
+
+	config.LoadEnvs(envs)
+	return nil
 }

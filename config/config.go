@@ -39,7 +39,6 @@ func ParseEnvFiles(failOnMissingEnvFile bool, envFilePath ...string) (map[string
 		}
 
 		scanner := bufio.NewScanner(file)
-
 		var lines []string
 
 		for {
@@ -48,48 +47,54 @@ func ParseEnvFiles(failOnMissingEnvFile bool, envFilePath ...string) (map[string
 				break
 			}
 		}
-
-		for lineNumber, line := range lines {
-
-			commentRegex := regexp.MustCompile("#.+$")
-
-			comment := commentRegex.Find([]byte(line))
-
-			line = strings.Replace(line, string(comment), "", -1)
-			line = strings.TrimSpace(line)
-
-			if line == "" {
-				continue
-			}
-
-			splitted := strings.Split(line, "=")
-
-			// fails when AA=something?aa=bb
-			// if len(splitted) != 2 {
-			// 	return nil, fmt.Errorf("could not parse line %d in file [%s]", lineNumber, filePath)
-			// }
-
-			envKey := splitted[0]
-			envKey = strings.Replace(envKey, "export", "", -1)
-			envKey = strings.TrimSpace(envKey)
-
-			envVal := strings.Join(splitted[1:], "")
-			envVal = strings.Replace(envVal, "\"", "", -1)
-			envVal = strings.Replace(envVal, "'", "", -1)
-			envVal = strings.Replace(envVal, "`", "", -1)
-			envVal = strings.TrimSpace(envVal)
-
-			if envKey == "" {
-				return nil, fmt.Errorf("key at line %d is empty in file [%s]", lineNumber, filePath)
-			}
-
-			if envVal == "" {
-				return nil, fmt.Errorf("value at line %d is empty in file [%s]", lineNumber, filePath)
-			}
-
-			result[envKey] = envVal
-		}
+		return ParseEnvLines(lines)
 	}
 
+	return result, nil
+}
+
+func ParseEnvLines(lines []string) (map[string]string, error) {
+	var result map[string]string = make(map[string]string)
+
+	for lineNumber, line := range lines {
+
+		commentRegex := regexp.MustCompile("#.+$")
+
+		comment := commentRegex.Find([]byte(line))
+
+		line = strings.Replace(line, string(comment), "", -1)
+		line = strings.TrimSpace(line)
+
+		if line == "" {
+			continue
+		}
+
+		splitted := strings.Split(line, "=")
+
+		// fails when AA=something?aa=bb
+		// if len(splitted) != 2 {
+		// 	return nil, fmt.Errorf("could not parse line %d in file [%s]", lineNumber, filePath)
+		// }
+
+		envKey := splitted[0]
+		envKey = strings.Replace(envKey, "export", "", -1)
+		envKey = strings.TrimSpace(envKey)
+
+		envVal := strings.Join(splitted[1:], "")
+		envVal = strings.Replace(envVal, "\"", "", -1)
+		envVal = strings.Replace(envVal, "'", "", -1)
+		envVal = strings.Replace(envVal, "`", "", -1)
+		envVal = strings.TrimSpace(envVal)
+
+		if envKey == "" {
+			return nil, fmt.Errorf("key at line %d is empty", lineNumber)
+		}
+
+		if envVal == "" {
+			return nil, fmt.Errorf("value at line %d", lineNumber)
+		}
+
+		result[envKey] = envVal
+	}
 	return result, nil
 }
