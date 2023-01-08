@@ -54,6 +54,8 @@ func main() {
 	e.POST("/create-app", app.CreateApp)
 	e.POST("/update-app", app.UpdateApp)
 	e.DELETE("/delete-app", app.DeleteApp)
+	e.GET("/clear-builds", app.ClearBuildFolder)
+	e.GET("/download-backup", app.DownloadDbBackup)
 
 	// build trigger
 	e.POST("/build", app.HandlePostRequest)

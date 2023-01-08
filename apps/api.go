@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 
@@ -224,6 +225,26 @@ func (appCtx AppContext) DeleteApp(c echo.Context) error {
 	}
 
 	return c.JSON(200, idAsInt)
+}
+
+func (appCtx AppContext) ClearBuildFolder(c echo.Context) error {
+	err := os.RemoveAll("./build")
+
+	if err != nil {
+		return err
+	}
+
+	err = os.Mkdir("./build", 0755)
+
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(200, "{}")
+}
+
+func (appCtx AppContext) DownloadDbBackup(c echo.Context) error {
+	return c.File("./apps.db")
 }
 
 func loadGlobalEnvs(appConfig NanoConfig) error {
