@@ -5,6 +5,9 @@ FROM golang:1.18 as builder
 # Create and change to the app directory.
 WORKDIR /app
 
+ENV CGO_ENABLED=1
+ARG CGO_ENABLED=1
+
 # Retrieve application dependencies.
 # This allows the container build to reuse cached dependencies.
 # Expecting to copy go.mod and if present go.sum.
