@@ -1,13 +1,13 @@
 package main
 
 import (
-	"cd/apps"
-	"cd/config"
 	"log"
 	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/nano-ci-cd/apps"
+	"github.com/nano-ci-cd/config"
 )
 
 func init() {
