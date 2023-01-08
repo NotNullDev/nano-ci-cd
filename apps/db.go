@@ -1,6 +1,8 @@
 package apps
 
 import (
+	"os"
+
 	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -49,6 +51,12 @@ func (db AppsDb) InitConfig() error {
 
 	if any.ID != 0 {
 		return nil
+	}
+
+	initToken := os.Getenv("NANO_INIT_TOKEN")
+
+	if initToken != "" {
+		token = initToken
 	}
 
 	tx := db.Create(&NanoContext{

@@ -1,3 +1,5 @@
+NANO_INIT_TOKEN # Used to create the first token
+
 # REQUIRED GLOBAL ENV
 
 CONTAINER_REGISTRY_USERNAME
