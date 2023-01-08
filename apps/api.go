@@ -1,7 +1,6 @@
 package apps
 
 import (
-	"cd/config"
 	"context"
 	"encoding/base64"
 	"io"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/nano-ci-cd/config"
 )
 
 type AppContext struct {

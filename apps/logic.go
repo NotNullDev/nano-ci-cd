@@ -1,7 +1,6 @@
 package apps
 
 import (
-	"cd/config"
 	"context"
 	"encoding/base64"
 	"errors"
@@ -11,6 +10,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/nano-ci-cd/config"
 )
 
 const (
