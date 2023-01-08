@@ -178,6 +178,8 @@ func (appCtx AppContext) UpdateApp(c echo.Context) error {
 	}
 
 	req.NanoContextID = 1
+	req.BuildVal = base64.StdEncoding.EncodeToString([]byte(req.BuildVal))
+	req.EnvVal = base64.StdEncoding.EncodeToString([]byte(req.EnvVal))
 
 	tx := appCtx.Db.Save(&req)
 
@@ -219,7 +221,7 @@ func (appCtx AppContext) DeleteApp(c echo.Context) error {
 }
 
 func loadGlobalEnvs(appConfig NanoConfig) error {
-	decoded, err := base64.RawStdEncoding.DecodeString(appConfig.GlobalEnvironment)
+	decoded, err := base64.StdEncoding.DecodeString(appConfig.GlobalEnvironment)
 
 	if err != nil {
 		return err

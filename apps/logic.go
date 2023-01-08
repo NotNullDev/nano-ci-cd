@@ -78,7 +78,8 @@ func prepareEnvAndBuildArguments(buildContext context.Context, db *AppsDb) error
 	app := mustGetAppFromContext(buildContext)
 	os.Setenv("APP_NAME", app.AppName)
 
-	decoded, err := base64.RawStdEncoding.DecodeString(app.BuildVal)
+	println("Preparing build arguments" + app.BuildVal)
+	decoded, err := base64.StdEncoding.DecodeString(app.BuildVal)
 
 	if err != nil {
 		return err

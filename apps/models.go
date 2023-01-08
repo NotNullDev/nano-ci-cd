@@ -1,6 +1,10 @@
 package apps
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type NanoConfig struct {
 	gorm.Model        `json:"-"`
@@ -10,16 +14,19 @@ type NanoConfig struct {
 }
 
 type NanoApp struct {
-	gorm.Model
-	AppName           string `json:"appName" gorm:"unique"`
-	AppStatus         string `json:"appStatus"`
-	EnvVal            string `json:"envVal"`
-	EnvMountPath      string `json:"envMountPath"`
-	BuildVal          string `json:"buildVal"`
-	BuildValMountPath string `json:"buildValMountPath"`
-	RepoUrl           string `json:"repoUrl"`
-	RepoBranch        string `json:"repoBranch"`
-	NanoContextID     uint   `json:"-"`
+	ID                uint `gorm:"primarykey"`
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	DeletedAt         gorm.DeletedAt `gorm:"uniqueIndex:idx_app_name"`
+	AppName           string         `json:"appName" gorm:"uniqueIndex:idx_app_name"`
+	AppStatus         string         `json:"appStatus"`
+	EnvVal            string         `json:"envVal"`
+	EnvMountPath      string         `json:"envMountPath"`
+	BuildVal          string         `json:"buildVal"`
+	BuildValMountPath string         `json:"buildValMountPath"`
+	RepoUrl           string         `json:"repoUrl"`
+	RepoBranch        string         `json:"repoBranch"`
+	NanoContextID     uint           `json:"-"`
 
 	// ComposeRepoUrl              string `json:"composeRepoUrl"`
 	// ComposeFileRelativeLocation string `json:"composeFileRelativeLocation"`
