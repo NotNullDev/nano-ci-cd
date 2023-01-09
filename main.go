@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/nano-ci-cd/apps"
+	"github.com/nano-ci-cd/auth"
 	"github.com/nano-ci-cd/config"
 )
 
@@ -39,22 +40,70 @@ func main() {
 		panic(err.Error())
 	}
 
+	err = db.InitUser()
+
+	if err != nil {
+		panic(err.Error())
+	}
+
 	e := echo.New()
 
 	e.Use(middleware.CORS())
 	e.Use(middleware.Secure())
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			var config apps.NanoConfig
-			db.First(&config)
+			if c.Path() == "/login" {
+				return next(c)
+			}
 
-			h := c.Request().Header
-			key := h.Get("Authorization")
+			if c.Path() == "/build" {
+				var config apps.NanoConfig
+				db.First(&config)
 
-			if key != config.Token {
-				log.Printf("invalid token: %s", key)
-				return c.JSON(403, apps.ErrorResponse{
+				h := c.Request().Header
+				key := h.Get("Authorization")
+
+				if key != config.Token {
+					log.Printf("invalid token: %s", key)
+					return c.JSON(403, apps.ErrorResponse{
+						Error: "invalid token",
+					})
+				}
+
+				return next(c)
+			}
+
+			token := c.Request().Header.Get("nano-token")
+
+			if token == "" {
+				return c.JSON(401, apps.ErrorResponse{
+					Error: "missing token",
+				})
+			}
+
+			err := auth.ValidateToken(token)
+
+			if err != nil {
+				return c.JSON(401, apps.ErrorResponse{
 					Error: "invalid token",
+				})
+			}
+
+			session := &auth.NanoSession{
+				Token: token,
+			}
+
+			tx := db.DB.First(&session)
+
+			if tx.Error != nil {
+				return c.JSON(401, apps.ErrorResponse{
+					Error: "invalid token",
+				})
+			}
+
+			if session.ID == 0 {
+				return c.JSON(403, apps.ErrorResponse{
+					Error: "session not found",
 				})
 			}
 
@@ -76,6 +125,8 @@ func main() {
 	e.DELETE("/delete-app", app.DeleteApp)
 	e.GET("/clear-builds", app.ClearBuildFolder)
 	e.GET("/download-backup", app.DownloadDbBackup)
+	e.POST("/login", app.Login)
+	e.POST("/update-user", app.UpdateUser)
 
 	// build trigger
 	e.POST("/build", app.HandlePostRequest)

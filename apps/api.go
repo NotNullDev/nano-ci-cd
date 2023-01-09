@@ -10,7 +10,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/nano-ci-cd/auth"
 	"github.com/nano-ci-cd/config"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AppContext struct {
@@ -55,7 +57,6 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 		AppName: appName,
 	}
 
-	// TODO: get config from db
 	tx = appCtx.Db.First(&app, "app_name = ?", appName)
 
 	if tx.Error != nil {
@@ -248,6 +249,127 @@ func (appCtx AppContext) ClearBuildFolder(c echo.Context) error {
 
 func (appCtx AppContext) DownloadDbBackup(c echo.Context) error {
 	return c.File("./apps.db")
+}
+
+type UpdateUserRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (appCtx AppContext) UpdateUser(c echo.Context) error {
+	token := c.Request().Header.Get("nano-token")
+
+	var req UpdateUserRequest
+
+	err := c.Bind(&req)
+
+	if err != nil {
+		return c.JSON(400, ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	session := &auth.NanoSession{
+		Token: token,
+	}
+
+	appCtx.Db.First(&session)
+
+	if session.ID == 0 {
+		return c.JSON(403, ErrorResponse{
+			Error: "Invalid token",
+		})
+	}
+
+	user := &auth.NanoUser{}
+
+	appCtx.Db.First(&user, session.NanoUserID)
+
+	if user.ID == 0 {
+		return c.JSON(403, ErrorResponse{
+			Error: "Invalid token",
+		})
+	}
+
+	user.Username = req.Username
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+
+	if err != nil {
+		return c.JSON(400, ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	user.Password = string(hashed)
+
+	tx := appCtx.Db.Save(&user)
+
+	if tx.Error != nil {
+		return c.JSON(400, ErrorResponse{
+			Error: tx.Error.Error(),
+		})
+	}
+
+	return c.JSON(200, "")
+}
+
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (appCtx AppContext) Login(c echo.Context) error {
+	var req LoginRequest
+	c.Bind(&req)
+
+	if req.Username == "" || req.Password == "" {
+		return c.JSON(400, ErrorResponse{
+			Error: "Username or password is empty",
+		})
+	}
+
+	user := auth.NanoUser{
+		Username: req.Username,
+	}
+
+	appCtx.Db.First(&user)
+
+	if user.ID == 0 {
+		return c.JSON(403, ErrorResponse{
+			Error: "Invalid username or password",
+		})
+	}
+
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+
+	if err != nil {
+		return c.JSON(403, ErrorResponse{
+			Error: "Invalid username or password",
+		})
+	}
+
+	token, err := auth.CreateToken()
+
+	if err != nil {
+		return c.JSON(500, ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	session := &auth.NanoSession{
+		Token:      token,
+		NanoUserID: user.ID,
+	}
+
+	tx := appCtx.Db.Save(&session)
+
+	if tx.Error != nil {
+		return c.JSON(500, ErrorResponse{
+			Error: "",
+		})
+	}
+
+	return c.JSON(200, token)
 }
 
 func loadGlobalEnvs(appConfig NanoConfig) error {

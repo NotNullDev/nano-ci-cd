@@ -4,6 +4,8 @@ import (
 	"os"
 
 	"github.com/glebarez/sqlite"
+	"github.com/nano-ci-cd/auth"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -39,6 +41,24 @@ func (db AppsDb) AutoMigrateModels() error {
 		return err
 	}
 
+	err = db.AutoMigrate(&auth.NanoUser{})
+
+	if err != nil {
+		return err
+	}
+
+	err = db.AutoMigrate(&auth.NanoSession{})
+
+	if err != nil {
+		return err
+	}
+
+	err = db.AutoMigrate(&auth.NanoSessionData{})
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -67,4 +87,41 @@ func (db AppsDb) InitConfig() error {
 	})
 
 	return tx.Error
+}
+
+func (db AppsDb) InitUser() error {
+	var any auth.NanoUser
+	db.First(&any)
+
+	if any.ID != 0 {
+		return nil
+	}
+
+	username := "admin"
+	password := "admin"
+
+	if os.Getenv("NANO_INIT_USERNAME") != "" {
+		username = os.Getenv("NANO_INIT_USERNAME")
+	}
+
+	if os.Getenv("NANO_INIT_PASSWORD") != "" {
+		password = os.Getenv("NANO_INIT_PASSWORD")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+
+	if err != nil {
+		return err
+	}
+
+	tx := db.Create(&auth.NanoUser{
+		Username: username,
+		Password: string(hash),
+	})
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
 }
