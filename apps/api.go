@@ -84,15 +84,14 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 			Error: err.Error(),
 		})
 	}
-	err = Build(buildContext, appCtx.Db)
+	go func() {
+		err := Build(buildContext, appCtx.Db)
+		if err != nil {
+			println(err.Error())
+		}
+	}()
 
-	if err != nil {
-		return c.JSON(400, ErrorResponse{
-			Error: err.Error(),
-		})
-	}
-
-	return nil
+	return c.JSON(200, "")
 }
 
 func (appCtx AppContext) GetNanoContext(c echo.Context) error {

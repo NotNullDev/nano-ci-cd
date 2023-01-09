@@ -14,7 +14,8 @@ type AppsDb struct {
 }
 
 func NewAppsDatabase() (*AppsDb, error) {
-	databaseConn, err := gorm.Open(sqlite.Open("apps.db"), &gorm.Config{})
+	os.Mkdir("./data", 0777)
+	databaseConn, err := gorm.Open(sqlite.Open("./data/apps.db"), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
