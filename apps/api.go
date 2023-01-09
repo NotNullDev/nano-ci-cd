@@ -29,6 +29,15 @@ type ContextKey string
 var contextKey ContextKey = "app"
 
 func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
+	nanoContext := NanoContext{}
+	appCtx.Db.First(&nanoContext)
+
+	if nanoContext.CurrentlyBuildingAppId != 0 {
+		return c.JSON(400, ErrorResponse{
+			Error: "another app is currently building",
+		})
+	}
+
 	var appConfig NanoConfig
 
 	tx := appCtx.Db.First(&appConfig)
@@ -84,7 +93,20 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 			Error: err.Error(),
 		})
 	}
+
 	go func() {
+		defer func() {
+			appCtx.Db.First(&nanoContext)
+			nanoContext.CurrentlyBuildingAppId = 0
+
+			appCtx.Db.Save(&nanoContext)
+		}()
+
+		appCtx.Db.First(&nanoContext)
+		nanoContext.CurrentlyBuildingAppId = app.ID
+
+		appCtx.Db.Save(&nanoContext)
+
 		err := Build(buildContext, appCtx.Db)
 		if err != nil {
 			println(err.Error())

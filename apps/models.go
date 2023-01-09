@@ -47,7 +47,8 @@ type ErrorResponse struct {
 }
 
 type NanoContext struct {
-	gorm.Model `json:"-"`
-	Apps       []NanoApp  `json:"apps"`
-	NanoConfig NanoConfig `json:"nanoConfig"`
+	gorm.Model             `json:"-"`
+	Apps                   []NanoApp  `json:"apps"`
+	NanoConfig             NanoConfig `json:"nanoConfig"`
+	CurrentlyBuildingAppId uint       `json:"buildingAppId"`
 }
