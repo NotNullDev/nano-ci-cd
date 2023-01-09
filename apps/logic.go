@@ -169,9 +169,9 @@ func executeCommand(command string) error {
 
 func cloneRepo(buildContext context.Context) error {
 	app := mustGetAppFromContext(buildContext)
-	os.Mkdir("builds", 0777)
+	os.Mkdir("/builds", 0777)
 
-	folderName, err := os.MkdirTemp("builds", "source-*")
+	folderName, err := os.MkdirTemp("/builds", "source-*")
 
 	if err != nil {
 		return err
