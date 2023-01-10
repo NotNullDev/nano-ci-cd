@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -21,4 +23,13 @@ type NanoSessionData struct {
 	NanoSessionID uint
 	Key           string
 	Value         string
+}
+
+type NanoBuild struct {
+	gorm.Model  `json:"-"`
+	AppID       uint      `json:"appId"`
+	BuildStatus string    `json:"buildStatus"` // running, failed, success
+	Logs        string    `json:"logs"`
+	StartedAt   time.Time `json:"startedAt"`
+	FinishedAt  time.Time `json:"finishedAt"`
 }

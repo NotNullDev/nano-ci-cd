@@ -28,7 +28,44 @@ func main() {
 		panic(err.Error())
 	}
 
-	err = db.AutoMigrateModels()
+	prepareDatabase(db)
+
+	e := echo.New()
+	initMiddleware(e, db)
+
+	app := apps.AppContext{
+		Echo: e,
+		Db:   db,
+	}
+
+	// dashboard
+	e.GET("/", app.GetNanoContext)
+	e.POST("/reset-token", app.ResetToken)
+	e.POST("/update-global-env", app.UpdateGlobalEnvironment)
+	e.POST("/create-app", app.CreateApp)
+	e.POST("/update-app", app.UpdateApp)
+	e.DELETE("/delete-app", app.DeleteApp)
+	e.GET("/clear-builds", app.ClearBuildFolder)
+	e.GET("/download-backup", app.DownloadDbBackup)
+	e.POST("/login", app.Login)
+	e.POST("/update-user", app.UpdateUser)
+	e.GET("/logs", app.GetLogs)
+
+	// build trigger
+	e.POST("/build", app.HandlePostRequest)
+
+	e.HTTPErrorHandler = func(err error, ctx echo.Context) {
+		println(err.Error() + " at " + time.Now().String())
+		ctx.JSON(500, err.Error())
+	}
+
+	if err := e.Start(":8080"); err != nil {
+		panic(err.Error())
+	}
+}
+
+func prepareDatabase(db *apps.AppsDb) {
+	err := db.AutoMigrateModels()
 
 	if err != nil {
 		panic(err.Error())
@@ -45,9 +82,9 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
+}
 
-	e := echo.New()
-
+func initMiddleware(e *echo.Echo, db *apps.AppsDb) {
 	e.Use(middleware.CORS())
 	e.Use(middleware.Secure())
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -110,33 +147,4 @@ func main() {
 			return next(c)
 		}
 	})
-
-	app := apps.AppContext{
-		Echo: e,
-		Db:   db,
-	}
-
-	// dashboard
-	e.GET("/", app.GetNanoContext)
-	e.POST("/reset-token", app.ResetToken)
-	e.POST("/update-global-env", app.UpdateGlobalEnvironment)
-	e.POST("/create-app", app.CreateApp)
-	e.POST("/update-app", app.UpdateApp)
-	e.DELETE("/delete-app", app.DeleteApp)
-	e.GET("/clear-builds", app.ClearBuildFolder)
-	e.GET("/download-backup", app.DownloadDbBackup)
-	e.POST("/login", app.Login)
-	e.POST("/update-user", app.UpdateUser)
-
-	// build trigger
-	e.POST("/build", app.HandlePostRequest)
-
-	e.HTTPErrorHandler = func(err error, ctx echo.Context) {
-		println(err.Error() + " at " + time.Now().String())
-		ctx.JSON(500, err.Error())
-	}
-
-	if err := e.Start(":8080"); err != nil {
-		panic(err.Error())
-	}
 }

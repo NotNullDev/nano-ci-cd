@@ -60,6 +60,12 @@ func (db AppsDb) AutoMigrateModels() error {
 		return err
 	}
 
+	err = db.AutoMigrate(&auth.NanoBuild{})
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

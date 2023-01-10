@@ -5,12 +5,14 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
+	"github.com/nano-ci-cd/auth"
 	"github.com/nano-ci-cd/config"
 )
 
@@ -20,7 +22,18 @@ const (
 	baseContainerFolder   = "/app"
 )
 
+type BuildContext struct {
+	Context *context.Context
+	Db      *AppsDb
+}
+
 func Build(buildContext context.Context, db *AppsDb) error {
+
+	bContext := BuildContext{
+		Context: &buildContext,
+		Db:      db,
+	}
+
 	os.Chdir(baseContainerFolder)
 
 	println(fmt.Sprintf("Build started at %v", time.Now()))
@@ -31,19 +44,19 @@ func Build(buildContext context.Context, db *AppsDb) error {
 		return err
 	}
 
-	err = prepareEnvAndBuildArguments(buildContext, db)
+	err = bContext.prepareEnvAndBuildArguments(buildContext, db)
 
 	if err != nil {
 		return err
 	}
 
-	err = runPreBuildScript()
+	err = bContext.runPreBuildScript()
 
 	if err != nil {
 		return err
 	}
 
-	err = runBuildScript()
+	err = bContext.runBuildScript()
 
 	if err != nil {
 		return err
@@ -55,13 +68,13 @@ func Build(buildContext context.Context, db *AppsDb) error {
 		return err
 	}
 
-	err = runPostBuildScript()
+	err = bContext.runPostBuildScript()
 
 	if err != nil {
 		return err
 	}
 
-	err = executeDockerComposeFileIfConfigured(buildContext)
+	err = bContext.executeDockerComposeFileIfConfigured(buildContext)
 
 	if err != nil {
 		return err
@@ -71,11 +84,11 @@ func Build(buildContext context.Context, db *AppsDb) error {
 	return nil
 }
 
-func executeDockerComposeFileIfConfigured(buildContext context.Context) error {
+func (appBuildContext *BuildContext) executeDockerComposeFileIfConfigured(buildContext context.Context) error {
 	return nil
 }
 
-func prepareEnvAndBuildArguments(buildContext context.Context, db *AppsDb) error {
+func (appBuildContext *BuildContext) prepareEnvAndBuildArguments(buildContext context.Context, db *AppsDb) error {
 	app := mustGetAppFromContext(buildContext)
 	os.Setenv("APP_NAME", app.AppName)
 
@@ -97,7 +110,7 @@ func prepareEnvAndBuildArguments(buildContext context.Context, db *AppsDb) error
 	config.LoadEnvs(envs)
 
 	envs["APP_NAME"] = app.AppName
-	prepareBuildArgs(envs)
+	appBuildContext.prepareBuildArgs(envs)
 
 	if app.BuildValMountPath != "" {
 		err := os.WriteFile(app.BuildValMountPath, []byte(decoded), 0777)
@@ -109,7 +122,7 @@ func prepareEnvAndBuildArguments(buildContext context.Context, db *AppsDb) error
 	return err
 }
 
-func prepareBuildArgs(envs map[string]string) {
+func (appBuildContext *BuildContext) prepareBuildArgs(envs map[string]string) {
 	result := ""
 
 	for key := range envs {
@@ -119,17 +132,17 @@ func prepareBuildArgs(envs map[string]string) {
 	os.Setenv("DOCKER_BUILD_ARGS", result)
 }
 
-func runPreBuildScript() error {
+func (appBuildContext *BuildContext) runPreBuildScript() error {
 	_, err := os.Stat(fmt.Sprintf("./%s/pre-build.sh", configFolder))
 
 	if err != nil {
 		log.Println("Could not read pre-build.sh script.")
 		return nil
 	}
-	return executeCommand(fmt.Sprintf("bash ./%s/pre-build.sh", configFolder))
+	return appBuildContext.executeAppCommand(fmt.Sprintf("bash ./%s/pre-build.sh", configFolder))
 }
 
-func runBuildScript() error {
+func (appBuildContext *BuildContext) runBuildScript() error {
 	_, err := os.Stat(fmt.Sprintf("./%s/build.sh", configFolder))
 
 	if err != nil {
@@ -137,20 +150,51 @@ func runBuildScript() error {
 		return nil
 	}
 
-	return executeCommand(fmt.Sprintf("bash ./%s/build.sh", configFolder))
+	return appBuildContext.executeAppCommand(fmt.Sprintf("bash ./%s/build.sh", configFolder))
 }
 
-func runPostBuildScript() error {
+func (appBuildContext *BuildContext) runPostBuildScript() error {
 	_, err := os.Stat(fmt.Sprintf("./%s/post-build.sh", configFolder))
 
 	if err != nil {
 		log.Println("Could not read post-build.sh script.")
 		return nil
 	}
-	return executeCommand(fmt.Sprintf("bash ./%s/post-build.sh", configFolder))
+	return appBuildContext.executeAppCommand(fmt.Sprintf("bash ./%s/post-build.sh", configFolder))
 }
 
-func executeCommand(command string) error {
+type AppLogsWriter struct {
+	AppId uint
+	Logs  string
+}
+
+// TODO: add timestamps
+func (w *AppLogsWriter) Write(p []byte) (n int, err error) {
+	w.Logs = w.Logs + string(p)
+	return len(p), nil
+}
+
+func (appBuildContext *BuildContext) executeAppCommand(command string) error {
+	app := mustGetAppFromContext(*appBuildContext.Context)
+
+	appWriter := &AppLogsWriter{
+		AppId: app.ID,
+		Logs:  "",
+	}
+
+	defer func() {
+		build := mustGetAppBuildFromContext(*appBuildContext.Context)
+
+		build.Logs = appWriter.Logs
+
+		appBuildContext.Db.Create(&build)
+
+	}()
+
+	return executeCommand(command, appWriter)
+}
+
+func executeCommand(command string, writers ...io.Writer) error {
 	splitted := strings.Split(command, " ")
 
 	if len(splitted) <= 1 {
@@ -159,8 +203,10 @@ func executeCommand(command string) error {
 
 	cmd := exec.Command(splitted[0], splitted[1:]...)
 
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	writers = append(writers, os.Stdout, os.Stderr)
+
+	cmd.Stdout = io.MultiWriter(writers...)
+	cmd.Stderr = io.MultiWriter(writers...)
 
 	err := cmd.Run()
 
@@ -227,4 +273,14 @@ func mustGetAppFromContext(ctx context.Context) *NanoApp {
 	}
 
 	return app
+}
+
+func mustGetAppBuildFromContext(ctx context.Context) *auth.NanoBuild {
+	build, ok := ctx.Value(currentAppBuildKey).(*auth.NanoBuild)
+
+	if !ok {
+		panic("could not get build from context")
+	}
+
+	return build
 }

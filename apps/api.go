@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -25,8 +26,10 @@ type AppsApi struct {
 }
 
 type ContextKey string
+type AppBuildContextKey string
 
 var contextKey ContextKey = "app"
+var currentAppBuildKey AppBuildContextKey = "appBuild"
 
 func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 	nanoContext := NanoContext{}
@@ -101,6 +104,15 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 
 			appCtx.Db.Save(&nanoContext)
 		}()
+
+		build := &auth.NanoBuild{
+			AppID:       app.ID,
+			StartedAt:   time.Now(),
+			BuildStatus: "running",
+		}
+		appCtx.Db.Create(&build)
+
+		buildContext = context.WithValue(buildContext, currentAppBuildKey, &build)
 
 		appCtx.Db.First(&nanoContext)
 		nanoContext.CurrentlyBuildingAppId = app.ID
@@ -391,6 +403,38 @@ func (appCtx AppContext) Login(c echo.Context) error {
 	}
 
 	return c.JSON(200, token)
+}
+
+func (appCtx AppContext) GetLogs(c echo.Context) error {
+	appId := c.QueryParam("appId")
+
+	if appId == "" {
+		return c.JSON(400, ErrorResponse{
+			Error: "App ID is required",
+		})
+	}
+
+	idAsInt, err := strconv.ParseInt(appId, 10, 64)
+
+	if err != nil {
+		return c.JSON(400, ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	logs := &auth.NanoBuild{
+		AppID: uint(idAsInt),
+	}
+
+	appCtx.Db.Order("created_at desc").First(&logs, idAsInt)
+
+	if logs.ID == 0 {
+		return c.JSON(400, ErrorResponse{
+			Error: "Logs for the requested app not found",
+		})
+	}
+
+	return c.JSON(200, logs)
 }
 
 func loadGlobalEnvs(appConfig NanoConfig) error {
