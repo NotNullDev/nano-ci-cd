@@ -431,11 +431,9 @@ func (appCtx AppContext) GetLogs(c echo.Context) error {
 		})
 	}
 
-	logs := &auth.NanoBuild{
-		AppID: uint(idAsInt),
-	}
+	logs := &auth.NanoBuild{}
 
-	appCtx.Db.Order("id desc").Find(&logs).Limit(1)
+	appCtx.Db.Order("id desc").Where("app_id = ?", idAsInt).Find(&logs).Limit(1)
 
 	if logs.ID == 0 {
 		return c.JSON(400, ErrorResponse{
