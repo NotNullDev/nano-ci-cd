@@ -28,8 +28,8 @@ type AppsApi struct {
 type ContextKey string
 type AppBuildContextKey string
 
-var contextKey ContextKey = "app"
-var currentAppBuildKey AppBuildContextKey = "appBuild"
+var contextKey ContextKey
+var currentAppBuildKey AppBuildContextKey
 
 func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 	nanoContext := NanoContext{}
@@ -112,7 +112,7 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 		}
 		appCtx.Db.Create(&build)
 
-		buildContext = context.WithValue(buildContext, currentAppBuildKey, &build)
+		buildContext = context.WithValue(buildContext, currentAppBuildKey, build)
 
 		appCtx.Db.First(&nanoContext)
 		nanoContext.CurrentlyBuildingAppId = app.ID

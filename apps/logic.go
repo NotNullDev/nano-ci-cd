@@ -187,8 +187,7 @@ func (appBuildContext *BuildContext) executeAppCommand(command string) error {
 
 		build.Logs = appWriter.Logs
 
-		appBuildContext.Db.Create(&build)
-
+		appBuildContext.Db.Save(&build)
 	}()
 
 	return executeCommand(command, appWriter)
