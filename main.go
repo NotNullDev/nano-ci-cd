@@ -38,6 +38,12 @@ func main() {
 		Db:   db,
 	}
 
+	nanoContext := apps.NanoContext{}
+
+	db.First(&nanoContext)
+	nanoContext.CurrentlyBuildingAppId = 0
+	db.Save(&nanoContext)
+
 	// dashboard
 	e.GET("/", app.GetNanoContext)
 	e.POST("/reset-token", app.ResetToken)

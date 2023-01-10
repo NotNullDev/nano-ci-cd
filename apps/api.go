@@ -32,6 +32,8 @@ var contextKey ContextKey
 var currentAppBuildKey AppBuildContextKey
 
 func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
+	// setSSEHeaders(c)
+
 	nanoContext := NanoContext{}
 	appCtx.Db.First(&nanoContext)
 
@@ -96,7 +98,10 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 			Error: err.Error(),
 		})
 	}
+	logsChan := make(chan string)
+	done := make(chan bool)
 
+	savedBuff := []string{}
 	go func() {
 		build := &auth.NanoBuild{
 			AppID:       app.ID,
@@ -119,7 +124,23 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 			appCtx.Db.Save(&nanoContext)
 		}()
 
-		buildContext, err := Build(buildContext, appCtx.Db)
+		go func() {
+		outer:
+			for {
+				select {
+				case log := <-logsChan:
+					// c.Response().Write([]byte(log))
+					// savedBuff = append(savedBuff, log)
+					build.Logs = build.Logs + log
+					appCtx.Db.Save(&build)
+					// os.Stderr.Write([]byte("haha: " + log + "\n"))
+				case <-done:
+					break outer
+				}
+			}
+		}()
+
+		buildContext, err := Build(buildContext, appCtx.Db, logsChan)
 
 		if err != nil {
 			println(err.Error())
@@ -132,6 +153,8 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 		appCtx.Db.Save(&build)
 
 		buildContext.SaveLogs()
+		done <- true
+		println("haha saved buf: ", savedBuff)
 	}()
 
 	return c.JSON(200, "")
@@ -290,7 +313,7 @@ func (appCtx AppContext) ClearBuildFolder(c echo.Context) error {
 }
 
 func (appCtx AppContext) DownloadDbBackup(c echo.Context) error {
-	return c.File("./apps.db")
+	return c.File("/data/apps.db")
 }
 
 type UpdateUserRequest struct {
@@ -461,4 +484,12 @@ func loadGlobalEnvs(appConfig NanoConfig) error {
 
 	config.LoadEnvs(envs)
 	return nil
+}
+
+func setSSEHeaders(c echo.Context) {
+	c.Response().Header().Set("Access-Control-Allow-Origin", "*")
+	c.Response().Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	c.Response().Header().Set("Content-Type", "text/event-stream")
+	c.Response().Header().Set("Cache-Control", "no-cache")
+	c.Response().Header().Set("Connection", "keep-alive")
 }

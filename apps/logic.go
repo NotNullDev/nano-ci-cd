@@ -28,9 +28,11 @@ type SingleBuildContext struct {
 	LogsWriter *AppLogsWriter
 }
 
-func Build(buildContext context.Context, db *AppsDb) (SingleBuildContext, error) {
+func Build(buildContext context.Context, db *AppsDb, logsChan chan string) (SingleBuildContext, error) {
+
 	appWriter := &AppLogsWriter{
-		Logs: "",
+		Logs:     "",
+		LogsChan: logsChan,
 	}
 
 	bContext := SingleBuildContext{
@@ -176,12 +178,20 @@ func (appBuildContext *SingleBuildContext) runPostBuildScript() error {
 }
 
 type AppLogsWriter struct {
-	Logs string
+	Logs     string
+	LogsChan chan string
 }
 
 // TODO: add timestamps
 func (w *AppLogsWriter) Write(p []byte) (n int, err error) {
-	w.Logs = w.Logs + string(p)
+	now := time.Now()
+
+	formattedNow := fmt.Sprintf("%d.%d.%d %d:%d:%d", now.Day(), now.Month(), now.Year(), now.Hour(), now.Minute(), now.Second())
+	newLine := fmt.Sprintf("[%s] %s", formattedNow, string(p))
+
+	w.Logs = w.Logs + newLine
+	w.LogsChan <- newLine
+
 	return len(p), nil
 }
 
