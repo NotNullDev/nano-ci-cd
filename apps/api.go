@@ -98,13 +98,6 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 	}
 
 	go func() {
-		defer func() {
-			appCtx.Db.First(&nanoContext)
-			nanoContext.CurrentlyBuildingAppId = 0
-
-			appCtx.Db.Save(&nanoContext)
-		}()
-
 		build := &auth.NanoBuild{
 			AppID:       app.ID,
 			StartedAt:   time.Now(),
@@ -114,15 +107,31 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 
 		buildContext = context.WithValue(buildContext, currentAppBuildKey, build)
 
-		appCtx.Db.First(&nanoContext)
-		nanoContext.CurrentlyBuildingAppId = app.ID
+		{
+			appCtx.Db.First(&nanoContext)
+			nanoContext.CurrentlyBuildingAppId = app.ID
+			appCtx.Db.Save(&nanoContext)
+		}
 
-		appCtx.Db.Save(&nanoContext)
+		defer func() {
+			appCtx.Db.First(&nanoContext)
+			nanoContext.CurrentlyBuildingAppId = 0
+			appCtx.Db.Save(&nanoContext)
+		}()
 
-		err := Build(buildContext, appCtx.Db)
+		buildContext, err := Build(buildContext, appCtx.Db)
+
 		if err != nil {
 			println(err.Error())
+			build.BuildStatus = "failed"
+			return
+		} else {
+			build.BuildStatus = "success"
 		}
+
+		appCtx.Db.Save(&build)
+
+		buildContext.SaveLogs()
 	}()
 
 	return c.JSON(200, "")
@@ -426,7 +435,7 @@ func (appCtx AppContext) GetLogs(c echo.Context) error {
 		AppID: uint(idAsInt),
 	}
 
-	appCtx.Db.Order("created_at desc").First(&logs, idAsInt)
+	appCtx.Db.Order("id desc").Find(&logs).Limit(1)
 
 	if logs.ID == 0 {
 		return c.JSON(400, ErrorResponse{

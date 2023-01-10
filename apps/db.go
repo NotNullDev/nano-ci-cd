@@ -7,6 +7,7 @@ import (
 	"github.com/nano-ci-cd/auth"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type AppsDb struct {
@@ -15,7 +16,9 @@ type AppsDb struct {
 
 func NewAppsDatabase() (*AppsDb, error) {
 	os.Mkdir("/data", 0777)
-	databaseConn, err := gorm.Open(sqlite.Open("/data/apps.db"), &gorm.Config{})
+	databaseConn, err := gorm.Open(sqlite.Open("/data/apps.db"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
 	if err != nil {
 		return nil, err
 	}

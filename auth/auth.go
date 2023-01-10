@@ -54,8 +54,12 @@ func CreateToken() (string, error) {
 }
 
 func ValidateToken(token string) error {
+	return validateTokenInternal(token, jwtSecret)
+}
+
+func validateTokenInternal(token string, secret []byte) error {
 	_, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
+		return secret, nil
 	})
 
 	if err != nil {

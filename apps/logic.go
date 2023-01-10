@@ -22,16 +22,21 @@ const (
 	baseContainerFolder   = "/app"
 )
 
-type BuildContext struct {
-	Context *context.Context
-	Db      *AppsDb
+type SingleBuildContext struct {
+	Context    *context.Context
+	Db         *AppsDb
+	LogsWriter *AppLogsWriter
 }
 
-func Build(buildContext context.Context, db *AppsDb) error {
+func Build(buildContext context.Context, db *AppsDb) (SingleBuildContext, error) {
+	appWriter := &AppLogsWriter{
+		Logs: "",
+	}
 
-	bContext := BuildContext{
-		Context: &buildContext,
-		Db:      db,
+	bContext := SingleBuildContext{
+		Context:    &buildContext,
+		Db:         db,
+		LogsWriter: appWriter,
 	}
 
 	os.Chdir(baseContainerFolder)
@@ -41,54 +46,61 @@ func Build(buildContext context.Context, db *AppsDb) error {
 	err := cloneRepo(buildContext)
 
 	if err != nil {
-		return err
+		return bContext, err
 	}
 
 	err = bContext.prepareEnvAndBuildArguments(buildContext, db)
 
 	if err != nil {
-		return err
+		return bContext, err
 	}
 
 	err = bContext.runPreBuildScript()
 
 	if err != nil {
-		return err
+		return bContext, err
 	}
 
 	err = bContext.runBuildScript()
 
 	if err != nil {
-		return err
+		return bContext, err
 	}
 
 	err = loadBase64EnvFileIntoEnv(buildContext, db)
 
 	if err != nil {
-		return err
+		return bContext, err
 	}
 
 	err = bContext.runPostBuildScript()
 
 	if err != nil {
-		return err
+		return bContext, err
 	}
 
 	err = bContext.executeDockerComposeFileIfConfigured(buildContext)
 
 	if err != nil {
-		return err
+		return bContext, err
 	}
 
 	println(fmt.Sprintf("Build ended at %v", time.Now()))
+	return bContext, nil
+}
+
+func (appBuildContext *SingleBuildContext) executeDockerComposeFileIfConfigured(buildContext context.Context) error {
 	return nil
 }
 
-func (appBuildContext *BuildContext) executeDockerComposeFileIfConfigured(buildContext context.Context) error {
-	return nil
+func (appBuildContext *SingleBuildContext) SaveLogs() error {
+	build := mustGetAppBuildFromContext(*appBuildContext.Context)
+	build.Logs = appBuildContext.LogsWriter.Logs
+
+	return appBuildContext.Db.Save(&build).Error
 }
 
-func (appBuildContext *BuildContext) prepareEnvAndBuildArguments(buildContext context.Context, db *AppsDb) error {
+func (appBuildContext *SingleBuildContext) prepareEnvAndBuildArguments(buildContext context.Context, db *AppsDb) error {
 	app := mustGetAppFromContext(buildContext)
 	os.Setenv("APP_NAME", app.AppName)
 
@@ -122,7 +134,7 @@ func (appBuildContext *BuildContext) prepareEnvAndBuildArguments(buildContext co
 	return err
 }
 
-func (appBuildContext *BuildContext) prepareBuildArgs(envs map[string]string) {
+func (appBuildContext *SingleBuildContext) prepareBuildArgs(envs map[string]string) {
 	result := ""
 
 	for key := range envs {
@@ -132,7 +144,7 @@ func (appBuildContext *BuildContext) prepareBuildArgs(envs map[string]string) {
 	os.Setenv("DOCKER_BUILD_ARGS", result)
 }
 
-func (appBuildContext *BuildContext) runPreBuildScript() error {
+func (appBuildContext *SingleBuildContext) runPreBuildScript() error {
 	_, err := os.Stat(fmt.Sprintf("./%s/pre-build.sh", configFolder))
 
 	if err != nil {
@@ -142,7 +154,7 @@ func (appBuildContext *BuildContext) runPreBuildScript() error {
 	return appBuildContext.executeAppCommand(fmt.Sprintf("bash ./%s/pre-build.sh", configFolder))
 }
 
-func (appBuildContext *BuildContext) runBuildScript() error {
+func (appBuildContext *SingleBuildContext) runBuildScript() error {
 	_, err := os.Stat(fmt.Sprintf("./%s/build.sh", configFolder))
 
 	if err != nil {
@@ -153,7 +165,7 @@ func (appBuildContext *BuildContext) runBuildScript() error {
 	return appBuildContext.executeAppCommand(fmt.Sprintf("bash ./%s/build.sh", configFolder))
 }
 
-func (appBuildContext *BuildContext) runPostBuildScript() error {
+func (appBuildContext *SingleBuildContext) runPostBuildScript() error {
 	_, err := os.Stat(fmt.Sprintf("./%s/post-build.sh", configFolder))
 
 	if err != nil {
@@ -164,8 +176,7 @@ func (appBuildContext *BuildContext) runPostBuildScript() error {
 }
 
 type AppLogsWriter struct {
-	AppId uint
-	Logs  string
+	Logs string
 }
 
 // TODO: add timestamps
@@ -174,23 +185,8 @@ func (w *AppLogsWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func (appBuildContext *BuildContext) executeAppCommand(command string) error {
-	app := mustGetAppFromContext(*appBuildContext.Context)
-
-	appWriter := &AppLogsWriter{
-		AppId: app.ID,
-		Logs:  "",
-	}
-
-	defer func() {
-		build := mustGetAppBuildFromContext(*appBuildContext.Context)
-
-		build.Logs = appWriter.Logs
-
-		appBuildContext.Db.Save(&build)
-	}()
-
-	return executeCommand(command, appWriter)
+func (appBuildContext *SingleBuildContext) executeAppCommand(command string) error {
+	return executeCommand(command, appBuildContext.LogsWriter)
 }
 
 func executeCommand(command string, writers ...io.Writer) error {
