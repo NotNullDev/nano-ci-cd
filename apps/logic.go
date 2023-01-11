@@ -132,7 +132,9 @@ func (appBuildContext *SingleBuildContext) prepareEnvAndBuildArguments(buildCont
 		if err != nil {
 			return err
 		}
+		println("Build arguments written to file")
 	}
+	println("Build arguments prepared")
 
 	return err
 }
