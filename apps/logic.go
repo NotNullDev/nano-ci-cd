@@ -124,6 +124,7 @@ func (appBuildContext *SingleBuildContext) prepareEnvAndBuildArguments(buildCont
 	config.LoadEnvs(envs)
 
 	envs["APP_NAME"] = app.AppName
+
 	appBuildContext.prepareBuildArgs(envs)
 
 	if app.BuildValMountPath != "" {
