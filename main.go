@@ -56,6 +56,7 @@ func main() {
 	e.POST("/login", app.Login)
 	e.POST("/update-user", app.UpdateUser)
 	e.GET("/logs", app.GetLogs)
+	e.GET("/reset-global-build-status", app.ResetGlobalBuildStatus)
 
 	// build trigger
 	e.POST("/build", app.HandlePostRequest)

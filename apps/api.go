@@ -437,6 +437,26 @@ func (appCtx AppContext) Login(c echo.Context) error {
 	return c.JSON(200, token)
 }
 
+func (appCtx AppContext) ResetGlobalBuildStatus(c echo.Context) error {
+	var appConfig NanoContext
+
+	if appCtx.Db.First(&appConfig).Error != nil {
+		return c.JSON(400, ErrorResponse{
+			Error: "Context not found",
+		})
+	}
+
+	appConfig.CurrentlyBuildingAppId = 0
+
+	if appCtx.Db.Save(&appConfig).Error != nil {
+		return c.JSON(400, ErrorResponse{
+			Error: "failed to update context",
+		})
+	}
+
+	return c.JSON(200, "")
+}
+
 func (appCtx AppContext) GetLogs(c echo.Context) error {
 	appId := c.QueryParam("appId")
 
