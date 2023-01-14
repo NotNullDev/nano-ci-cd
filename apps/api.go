@@ -297,7 +297,7 @@ func (appCtx AppContext) DeleteApp(c echo.Context) error {
 }
 
 func (appCtx AppContext) ClearBuildFolder(c echo.Context) error {
-	err := os.RemoveAll("./build")
+	err := os.RemoveAll("./build/*")
 
 	if err != nil {
 		return err
