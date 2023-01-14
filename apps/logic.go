@@ -29,7 +29,6 @@ type SingleBuildContext struct {
 }
 
 func Build(buildContext context.Context, db *AppsDb, logsChan chan string) (SingleBuildContext, error) {
-
 	appWriter := &AppLogsWriter{
 		Logs:     "",
 		LogsChan: logsChan,
@@ -45,7 +44,7 @@ func Build(buildContext context.Context, db *AppsDb, logsChan chan string) (Sing
 
 	println(fmt.Sprintf("Build started at %v", time.Now()))
 
-	err := cloneRepo(buildContext)
+	err := bContext.cloneRepo(buildContext)
 
 	if err != nil {
 		return bContext, err
@@ -132,9 +131,9 @@ func (appBuildContext *SingleBuildContext) prepareEnvAndBuildArguments(buildCont
 		if err != nil {
 			return err
 		}
-		println("Build arguments written to file")
+		log.Printf("Build arguments written to file\n")
 	}
-	println("Build arguments prepared")
+	log.Printf("Build arguments prepared\n")
 
 	return err
 }
@@ -185,7 +184,6 @@ type AppLogsWriter struct {
 	LogsChan chan string
 }
 
-// TODO: add timestamps
 func (w *AppLogsWriter) Write(p []byte) (n int, err error) {
 	now := time.Now()
 
@@ -221,7 +219,7 @@ func executeCommand(command string, writers ...io.Writer) error {
 	return err
 }
 
-func cloneRepo(buildContext context.Context) error {
+func (appBuildContext *SingleBuildContext) cloneRepo(buildContext context.Context) error {
 	app := mustGetAppFromContext(buildContext)
 	os.Mkdir("/builds", 0777)
 
@@ -237,12 +235,7 @@ func cloneRepo(buildContext context.Context) error {
 		return err
 	}
 
-	cmd := exec.Command("git", "clone", app.RepoUrl, ".")
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err = cmd.Run()
+	err = appBuildContext.executeAppCommand(fmt.Sprintf("git clone %s .", app.RepoUrl))
 
 	if err != nil {
 		return err
