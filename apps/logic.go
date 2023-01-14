@@ -230,6 +230,7 @@ func (appBuildContext *SingleBuildContext) cloneRepo(buildContext context.Contex
 	os.Mkdir("/builds", 0777)
 
 	folderName, err := os.MkdirTemp("/builds", "source-*")
+	appBuildContext.WriteLog(fmt.Sprintf("created build folder [%s]", folderName))
 
 	if err != nil {
 		return err
@@ -241,6 +242,7 @@ func (appBuildContext *SingleBuildContext) cloneRepo(buildContext context.Contex
 		return err
 	}
 
+	appBuildContext.WriteLog(fmt.Sprintf("cloning repo %s", app.RepoUrl))
 	err = appBuildContext.executeAppCommand(fmt.Sprintf("git clone %s .", app.RepoUrl))
 
 	if err != nil {
@@ -248,12 +250,16 @@ func (appBuildContext *SingleBuildContext) cloneRepo(buildContext context.Contex
 	}
 
 	if app.RepoBranch != "" {
+		appBuildContext.WriteLog(fmt.Sprintf("switchin branch to [%s]", app.RepoBranch))
 		err = executeCommand(fmt.Sprintf("git checkout %s", app.RepoBranch))
 
 		if err != nil {
 			return err
 		}
 	}
+
+	appBuildContext.WriteLog("Build sha:")
+	appBuildContext.executeAppCommand("git rev-parse HEAD")
 
 	return nil
 }
