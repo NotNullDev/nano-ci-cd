@@ -57,6 +57,7 @@ func main() {
 	e.POST("/update-user", app.UpdateUser)
 	e.GET("/logs", app.GetLogs)
 	e.GET("/reset-global-build-status", app.ResetGlobalBuildStatus)
+	e.GET("/docker-system-prune", app.DockerSystemPrune)
 
 	// build trigger
 	e.POST("/build", app.HandlePostRequest)

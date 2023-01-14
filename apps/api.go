@@ -457,6 +457,16 @@ func (appCtx AppContext) ResetGlobalBuildStatus(c echo.Context) error {
 	return c.JSON(200, "")
 }
 
+func (appCtx AppContext) DockerSystemPrune(c echo.Context) error {
+	err := executeCommand("docker system prune -f -a")
+
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(200, "")
+}
+
 func (appCtx AppContext) GetLogs(c echo.Context) error {
 	appId := c.QueryParam("appId")
 

@@ -131,6 +131,7 @@ func (appBuildContext *SingleBuildContext) prepareEnvAndBuildArguments(buildCont
 		if err != nil {
 			return err
 		}
+		appBuildContext.WriteLog(fmt.Sprintf("Build arguments has been written to %s", app.BuildValMountPath))
 		log.Printf("Build arguments written to file\n")
 	}
 	log.Printf("Build arguments prepared\n")
@@ -182,6 +183,11 @@ func (appBuildContext *SingleBuildContext) runPostBuildScript() error {
 type AppLogsWriter struct {
 	Logs     string
 	LogsChan chan string
+}
+
+func (appBuildContext *SingleBuildContext) WriteLog(log string) error {
+	_, err := appBuildContext.LogsWriter.Write([]byte(log))
+	return err
 }
 
 func (w *AppLogsWriter) Write(p []byte) (n int, err error) {
