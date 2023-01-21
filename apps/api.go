@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/nano-ci-cd/auth"
 	"github.com/nano-ci-cd/config"
+	"github.com/nano-ci-cd/util"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -458,7 +459,7 @@ func (appCtx AppContext) ResetGlobalBuildStatus(c echo.Context) error {
 }
 
 func (appCtx AppContext) DockerSystemPrune(c echo.Context) error {
-	err := executeCommand("docker system prune -f -a")
+	err := util.ExecuteCommand("docker system prune -f -a")
 
 	if err != nil {
 		return err

@@ -9,6 +9,7 @@ import (
 	"github.com/nano-ci-cd/apps"
 	"github.com/nano-ci-cd/auth"
 	"github.com/nano-ci-cd/config"
+	"github.com/nano-ci-cd/metrics"
 )
 
 func init() {
@@ -22,6 +23,7 @@ func init() {
 }
 
 func main() {
+	metrics.Start()
 	db, err := apps.NewAppsDatabase()
 
 	if err != nil {

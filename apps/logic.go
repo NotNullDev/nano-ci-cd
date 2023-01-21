@@ -3,17 +3,15 @@ package apps
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
-	"io"
 	"log"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/nano-ci-cd/auth"
 	"github.com/nano-ci-cd/config"
+	"github.com/nano-ci-cd/util"
 )
 
 const (
@@ -203,26 +201,7 @@ func (w *AppLogsWriter) Write(p []byte) (n int, err error) {
 }
 
 func (appBuildContext *SingleBuildContext) executeAppCommand(command string) error {
-	return executeCommand(command, appBuildContext.LogsWriter)
-}
-
-func executeCommand(command string, writers ...io.Writer) error {
-	splitted := strings.Split(command, " ")
-
-	if len(splitted) <= 1 {
-		return errors.New("could not split command")
-	}
-
-	cmd := exec.Command(splitted[0], splitted[1:]...)
-
-	writers = append(writers, os.Stdout, os.Stderr)
-
-	cmd.Stdout = io.MultiWriter(writers...)
-	cmd.Stderr = io.MultiWriter(writers...)
-
-	err := cmd.Run()
-
-	return err
+	return util.ExecuteCommand(command, appBuildContext.LogsWriter)
 }
 
 func (appBuildContext *SingleBuildContext) cloneRepo(buildContext context.Context) error {
@@ -251,7 +230,7 @@ func (appBuildContext *SingleBuildContext) cloneRepo(buildContext context.Contex
 
 	if app.RepoBranch != "" {
 		appBuildContext.WriteLog(fmt.Sprintf("switching branch to [%s]\n", app.RepoBranch))
-		err = executeCommand(fmt.Sprintf("git checkout %s", app.RepoBranch))
+		err = util.ExecuteCommand(fmt.Sprintf("git checkout %s", app.RepoBranch))
 
 		if err != nil {
 			return err
