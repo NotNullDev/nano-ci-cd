@@ -8,7 +8,10 @@
 	export let appId = 'fsdafadsf';
 </script>
 
-<div class="flex flex-col p-4 w-48 h-52 border-gray-700 border rounded">
+<div
+	class="flex flex-col p-4 w-48 h-52 border-gray-700 border rounded hover:shadow-indigo-900 hover:shadow hover:scale-105
+	transition-all duration-300"
+>
 	<div class="mb-2">{appName}</div>
 	<div class="flex-1 flex flex-col gap-2">
 		<div>Status: {appStatus}</div>

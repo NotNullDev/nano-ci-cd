@@ -12,6 +12,46 @@
 	<ButtonBase>Add</ButtonBase>
 </div>
 
-<div class="mt-5">
+<div class="mt-5 flex flex-wrap gap-2 mb-4">
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
+	<App />
 	<App />
 </div>
