@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*:focus {
+    outline: 1px solid #ccc;
+}
+
+@layer base {
+    *:focus {
+        @apply outline-gray-700 outline-1;
+    }
+}

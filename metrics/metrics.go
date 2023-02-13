@@ -30,11 +30,19 @@ func Start() {
 	c := cron.New()
 
 	c.AddFunc("@every 1s", func() {
-		getCpuInfo()
+		stats, err := getStorageStats()
+
+		if err != nil {
+			println(err.Error())
+		}
+
+		println("Storage stats:" + fmt.Sprintf("Total: %v, Free: %v", stats.Total, stats.Free))
 	})
 
-	c.Start()
+	go c.Start()
 }
+
+// todo for later below
 
 func getStorageStats() (StorageEntity, error) {
 	total, err := parseStorageCommand(storageTotal)
