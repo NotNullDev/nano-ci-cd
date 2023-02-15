@@ -1,5 +1,5 @@
 import { get } from 'svelte/store';
-import { authStore } from '../../stores/authStore';
+import { authStore } from './store';
 
 export async function nanoFetch(path: string, options?: RequestInit) {
 	const token = get(authStore()).token;

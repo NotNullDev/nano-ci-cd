@@ -49,4 +49,5 @@ export const NanoContextSchema = z.object({
 	nanoConfig: NanoConfigSchema,
 	buildingAppId: z.number()
 });
+
 export type NanoContext = z.infer<typeof NanoContextSchema>;

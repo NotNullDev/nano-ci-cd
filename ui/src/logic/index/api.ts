@@ -1,9 +1,11 @@
-import { App, NanoContext, NanoContextSchema } from '../../types/types';
+import { NanoContextSchema, type App, type NanoContext } from '../../types/types';
 import { nanoFetch } from '../common/api';
 
 export async function fetchNanoContext(): Promise<NanoContext> {
 	const res = await nanoFetch('/');
 	const dataRaw = await res?.json();
+
+	console.log(dataRaw);
 
 	const data = NanoContextSchema.parse(dataRaw);
 
