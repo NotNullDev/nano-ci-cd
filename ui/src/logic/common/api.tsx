@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import { authStore } from '../../stores/authStore';
 
-async function nanoFetch(path: string, options?: RequestInit) {
+export async function nanoFetch(path: string, options?: RequestInit) {
 	const token = get(authStore()).token;
 	const serverUrl = get(authStore()).serverUrl;
 	const isLoggedIn = get(authStore()).isLoggedIn;
@@ -35,4 +35,18 @@ async function nanoFetch(path: string, options?: RequestInit) {
 	}
 
 	return resp;
+}
+
+export async function logout() {
+	authStore().update((store) => {
+		store.isLoggedIn = false;
+		store.token = '';
+		return store;
+	});
+}
+
+export async function resetGlobalBuildStatus() {
+	const res = await nanoFetch('/reset-global-build-status', {});
+	const data = (await res?.text()) as string;
+	return data;
 }

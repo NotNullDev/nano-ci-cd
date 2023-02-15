@@ -1,9 +1,25 @@
 <svelte:options accessors={true} />
 
 <script lang="ts">
-	const classes = 'hover:bg-gray-700 p-1 cursor-pointer rounded px-2  ' + $$restProps.class;
+	import clsx from 'clsx';
+	import './buttonBase.d.ts';
+	export let accent: 'primary' | 'danger' = 'primary';
+
+	const classesCombined = 'p-1 cursor-pointer rounded px-2  ' + $$restProps.class;
 </script>
 
-<button {...$$restProps} class={classes + ' active:scale-95'} on:click>
+<button
+	{...$$restProps}
+	class={clsx(
+		' active:scale-95  font-semibold ',
+		{
+			'bg-accent hover:bg-accent/80': accent === 'primary',
+			'bg-danger hover:bg-danger/80': accent === 'danger'
+		},
+		classesCombined
+	)}
+	on:mouseenter
+	on:click
+>
 	<slot />
 </button>

@@ -34,6 +34,10 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"dayjs": "^1.11.7"
+		"clsx": "^1.2.1",
+		"dayjs": "^1.11.7",
+		"immer": "^9.0.19",
+		"zod": "^3.20.6",
+		"zustand": "^4.3.3"
 	}
 }

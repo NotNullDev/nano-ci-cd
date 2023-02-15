@@ -11,14 +11,8 @@
 		<nav
 			class="p-4 shadow-xl rounded-xl justify-between items-center flex flex-col border-r border-gray-700 mr-4 "
 		>
-			<div class="flex flex-col">
-				<LinkBase
-					href="/"
-					class="flex gap-1 items-center"
-					on:click={() => {
-						console.log('hello!');
-					}}
-				>
+			<div class="flex flex-col gap-1w">
+				<LinkBase href="/" class="flex gap-1 items-center">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						class="icon icon-tabler icon-tabler-dashboard"
@@ -38,13 +32,7 @@
 					</svg>
 					<div>Dashboard</div>
 				</LinkBase>
-				<LinkBase
-					href="/system"
-					class="flex gap-1 items-center"
-					on:click={() => {
-						console.log('hello!');
-					}}
-				>
+				<LinkBase href="/system" class="flex gap-1 items-center">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						class="icon icon-tabler icon-tabler-chart-area-line-filled"

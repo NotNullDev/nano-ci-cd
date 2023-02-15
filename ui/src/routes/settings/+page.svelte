@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
+	import Sidebar from './sidebar.svelte';
 
 	let changingSize = false;
 
@@ -17,13 +18,17 @@
 	};
 
 	onMount(() => {
-		document.addEventListener('mouseup', handleMouseDown);
-		document.addEventListener('mousemove', handleMouseMove);
+		if (typeof window !== 'undefined') {
+			document.addEventListener('mouseup', handleMouseDown);
+			document.addEventListener('mousemove', handleMouseMove);
+		}
 	});
 
 	onDestroy(() => {
-		document.removeEventListener('mouseup', handleMouseDown);
-		document.removeEventListener('mousemove', handleMouseMove);
+		if (typeof window !== 'undefined') {
+			document.removeEventListener('mouseup', handleMouseDown);
+			document.removeEventListener('mousemove', handleMouseMove);
+		}
 	});
 
 	let panelRef: HTMLDivElement | null = null;
@@ -32,6 +37,8 @@
 <svelte:head>
 	<title>Settings</title>
 </svelte:head>
+
+<Sidebar />
 
 <div class="flex flex-1 m-4 border border-b">
 	<div class="flex">
