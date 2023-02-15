@@ -9,7 +9,6 @@ import (
 	"github.com/nano-ci-cd/apps"
 	"github.com/nano-ci-cd/auth"
 	"github.com/nano-ci-cd/config"
-	"github.com/nano-ci-cd/metrics"
 )
 
 func init() {
@@ -23,7 +22,6 @@ func init() {
 }
 
 func main() {
-	metrics.Start()
 	db, err := apps.NewAppsDatabase()
 
 	if err != nil {
@@ -95,7 +93,9 @@ func prepareDatabase(db *apps.AppsDb) {
 }
 
 func initMiddleware(e *echo.Echo, db *apps.AppsDb) {
-	e.Use(middleware.CORS())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+	}))
 	e.Use(middleware.Secure())
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

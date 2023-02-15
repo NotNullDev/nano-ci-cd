@@ -1,4 +1,4 @@
-import { writable, type Writable } from 'svelte/store';
+import { writable } from 'svelte/store';
 
 export type AuthData = {
 	isLoggedIn: boolean;
@@ -6,18 +6,8 @@ export type AuthData = {
 	serverUrl: string;
 };
 
-export type AuthStoreType = {
-	dummy?: string;
-} & Writable<AuthData>;
-
-export function authStore(): AuthStoreType {
-	const s = writable({
-		isLoggedIn: false,
-		token: '',
-		serverUrl: 'http://localhost:8080'
-	});
-
-	return {
-		...s
-	};
-}
+export const authStore = writable<AuthData>({
+	isLoggedIn: false,
+	token: '',
+	serverUrl: 'http://localhost:8080'
+});

@@ -8,11 +8,7 @@
 
 	let nanoContext: NanoContext | null = null;
 
-	let isLoggedIn = false;
-
-	const auth = authStore().subscribe((value) => {
-		isLoggedIn = value.isLoggedIn;
-	});
+	let isLoggedIn = $authStore.isLoggedIn;
 
 	let isBrowser = typeof window !== 'undefined';
 
@@ -93,6 +89,4 @@
 		<App />
 		<App />
 	</div>
-{:else}
-	<div>You must be logged in to proceed</div>
 {/if}

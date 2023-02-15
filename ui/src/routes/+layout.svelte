@@ -1,22 +1,22 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import '../app.css';
+	import ButtonBase from '../components/buttonBase.svelte';
 	import LinkBase from '../components/linkBase.svelte';
 	import { authStore } from '../logic/common/store';
-
-	const auth = authStore();
 </script>
 
 <div class="min-h-screen flex flex-col bg-gray-800 text-slate-200">
 	<header class="p-4 flex">
-		<a href="/" class="hover:bg-gray-700 p-1 hover:cursor-pointer rounded px-2">Nano CI CD</a>
+		<a href="/" class="hover:bg-gray-700 p-1 cursor-pointer rounded px-2">Nano CI CD</a>
 	</header>
 	<div class="flex flex-1">
 		<!-- navbar -->
-		{#if $auth.isLoggedIn}
+		{#if $authStore.isLoggedIn}
 			<nav
 				class="p-4 shadow-xl rounded-xl justify-between items-center flex flex-col border-r border-gray-700 mr-4 "
 			>
-				<div class="flex flex-col gap-1w">
+				<div class="flex flex-col gap-1">
 					<LinkBase href="/" class="flex gap-1 items-center">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -78,6 +78,18 @@
 						</svg>
 						<div>Settings</div>
 					</LinkBase>
+					{#if $authStore.isLoggedIn}
+						<ButtonBase
+							accent="ghost"
+							on:click={() => {
+								authStore.update((s) => {
+									s.isLoggedIn = false;
+									goto('/login');
+									return s;
+								});
+							}}>Logout</ButtonBase
+						>
+					{/if}
 				</div>
 			</nav>
 		{/if}
