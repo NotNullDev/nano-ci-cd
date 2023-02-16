@@ -1,34 +1,60 @@
 <script type="ts">
 	import { goto } from '$app/navigation';
+	import { tick } from 'svelte';
 	import ButtonBase from '../../components/buttonBase.svelte';
 	import InputBase from '../../components/inputBase.svelte';
 	import { authStore } from '../../logic/common/store';
+	import { login } from '../../logic/logic/api';
 
 	authStore.subscribe((val) => {
 		if (val.isLoggedIn) {
 			goto('/');
 		}
 	});
+
+	let username = $authStore.username;
+	let password = '';
+	let serverUrl = $authStore.serverUrl;
 </script>
 
 <div class="flex flex-1 items-center justify-center">
-	<div class="p-12 pb-9 flex flex-col gap-2 shadow-xl shadow-orange-900 -translate-y-12" id="login">
+	<form
+		on:submit={(e) => e.preventDefault()}
+		class="p-12 pb-9 flex flex-col gap-2 shadow-xl shadow-orange-900 -translate-y-12"
+		id="login"
+	>
 		<h2 class="text-2xl text-center  mb-2 ">Welcome to Nano CI CD</h2>
-		<InputBase placeholder="login" />
-		<InputBase placeholder="password" />
-		<InputBase placeholder="serverUrl" />
+		<InputBase placeholder="login" bind:val={username} />
+		<InputBase placeholder="password" bind:val={password} />
+		<InputBase placeholder="serverUrl" bind:val={serverUrl} />
 		<ButtonBase
 			class="mt-2"
-			on:click={() => {
+			on:click={async () => {
 				authStore.update((store) => {
+					store.serverUrl = serverUrl;
+					return store;
+				});
+
+				await tick();
+
+				const token = await login(username, password);
+
+				authStore.update((store) => {
+					store.username = username;
+					store.serverUrl = serverUrl;
+					store.token = token;
 					store.isLoggedIn = true;
-					return { ...store };
+					return store;
 				});
 			}}>LOGIN</ButtonBase
 		>
 		<div class="text-end mt-3 text-slate-400 cursor-pointer">Forgot password?</div>
-	</div>
+	</form>
 </div>
+
+<svelte:head>
+	<title>Login</title>
+</svelte:head>
 
 <style>
 	#login {

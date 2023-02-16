@@ -4,7 +4,7 @@ export const AppSchema = z.object({
 	ID: z.number(),
 	CreatedAt: z.string(),
 	UpdatedAt: z.string(),
-	DeletedAt: z.string(),
+	DeletedAt: z.string().nullable(),
 	appName: z.string(),
 	appStatus: z.string(),
 	envVal: z.string(),

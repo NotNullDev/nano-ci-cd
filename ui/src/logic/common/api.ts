@@ -2,9 +2,9 @@ import { get } from 'svelte/store';
 import { authStore } from './store';
 
 export async function nanoFetch(path: string, options?: RequestInit) {
-	const token = get(authStore()).token;
-	const serverUrl = get(authStore()).serverUrl;
-	const isLoggedIn = get(authStore()).isLoggedIn;
+	const token = get(authStore).token;
+	const isLoggedIn = get(authStore).isLoggedIn;
+	const serverUrl = get(authStore).serverUrl;
 
 	if (options) {
 		options.headers = {
@@ -19,10 +19,22 @@ export async function nanoFetch(path: string, options?: RequestInit) {
 		};
 	}
 
-	const resp = await fetch(serverUrl + path, options);
+	const fetchUrl = serverUrl + path;
+	console.log('fetchUrl', fetchUrl);
+
+	options = {
+		...options,
+		headers: {
+			...options.headers,
+			'Content-Type': 'application/json'
+		}
+	};
+
+	const resp = await fetch(fetchUrl, options);
+	console.log('resp', resp);
 
 	if ((isLoggedIn && resp.status === 401) || resp.status === 403) {
-		authStore().update((state) => {
+		authStore.update((state) => {
 			state.isLoggedIn = false;
 			state.token = '';
 			return state;
@@ -38,7 +50,7 @@ export async function nanoFetch(path: string, options?: RequestInit) {
 }
 
 export async function logout() {
-	authStore().update((store) => {
+	authStore.update((store) => {
 		store.isLoggedIn = false;
 		store.token = '';
 		return store;

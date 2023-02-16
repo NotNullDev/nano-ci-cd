@@ -93,9 +93,12 @@ func prepareDatabase(db *apps.AppsDb) {
 }
 
 func initMiddleware(e *echo.Echo, db *apps.AppsDb) {
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-	}))
+	// e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+	// 	AllowOrigins: []string{"localhost:5173"},
+	// 	AllowHeaders: []string{"*"},
+	// 	AllowMethods: []string{"*"},
+	// }))
+	e.Use(middleware.CORS())
 	e.Use(middleware.Secure())
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

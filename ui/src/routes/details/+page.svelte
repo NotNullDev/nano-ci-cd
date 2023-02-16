@@ -3,7 +3,7 @@
 	import ButtonBase from '../../components/buttonBase.svelte';
 
 	let appid = '';
-	let logs = 'not logs available';
+	let logs = 'no logs available';
 
 	let history = 'not history available';
 

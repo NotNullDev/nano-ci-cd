@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
-import { nanoContextStore } from '../../stores/authStore';
-import { App, AppLogsType, AppLogsTypeSchema } from '../../types/types';
+import { AppLogsTypeSchema, type App, type AppLogsType } from '../../types/types';
 import { nanoFetch } from '../common/api';
+import { indexPageStore } from '../index/store';
 
 export async function updateApp(app: App) {
 	const res = await nanoFetch('/update-app', {
@@ -29,7 +29,7 @@ export async function runBuild(appName: string) {
 	const res = await nanoFetch('/build?appName=' + appName, {
 		method: 'POST',
 		headers: {
-			Authorization: get(nanoContextStore()).nanoConfig.token ?? ''
+			Authorization: get(indexPageStore).nanoConfig.token ?? ''
 		}
 	});
 

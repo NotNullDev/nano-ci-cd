@@ -1,27 +1,44 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import ButtonBase from '../components/buttonBase.svelte';
+	import IconPlus from '../components/icons/IconPlus.svelte';
 	import { authStore } from '../logic/common/store';
-	import { fetchNanoContext } from '../logic/index/api';
-	import type { NanoContext } from '../types/types';
+	import { createApp } from '../logic/index/api';
+	import { refetchNanoContext } from '../logic/index/functions';
+	import { indexPageStore } from '../logic/index/store';
 	import App from './app.svelte';
 
-	let nanoContext: NanoContext | null = null;
-
 	let isLoggedIn = $authStore.isLoggedIn;
-
 	let isBrowser = typeof window !== 'undefined';
+
+	authStore.subscribe((val) => {
+		isLoggedIn = val.isLoggedIn;
+	});
 
 	$: {
 		if (isBrowser && !isLoggedIn) {
+			console.log('redirect to login');
 			goto('/login');
 		}
+	}
 
+	$: {
 		if (isBrowser && isLoggedIn) {
+			console.log('fetching data');
 			(async () => {
-				nanoContext = await fetchNanoContext();
+				await refetchNanoContext();
 			})();
 		}
+	}
+
+	let newAppName = '';
+	let appsFilter = '';
+	let filteredApps = $indexPageStore.apps;
+
+	$: {
+		filteredApps = $indexPageStore.apps.filter((app) => {
+			return app.appName.includes(appsFilter);
+		});
 	}
 </script>
 
@@ -32,61 +49,36 @@
 {#if isLoggedIn}
 	<div class="p-4 px-8 shadow-xl justify-between flex gap-2">
 		<div>
-			<input placeholder="search by name" class="bg-gray-800 border-gray-700 border rounded p-2" />
+			<input
+				placeholder="find by name"
+				class="bg-gray-800 border-gray-700 border rounded p-2"
+				bind:value={appsFilter}
+			/>
 		</div>
-		<div>
-			<input placeholder="app name" class="bg-gray-800 border-gray-700 border rounded p-2" />
+		<div class="gap-2 flex">
+			<input
+				placeholder="app name"
+				class="bg-gray-800 border-gray-700 border rounded p-2"
+				bind:value={newAppName}
+			/>
 			<ButtonBase
-				on:click={() => {
-					console.log('add');
-				}}>Add</ButtonBase
+				class="w-16 h-10 flex items-center"
+				on:click={async () => {
+					const newApp = await createApp(newAppName);
+					await refetchNanoContext();
+				}}
 			>
+				<IconPlus className="" />
+				<div>Add</div>
+			</ButtonBase>
 		</div>
 	</div>
 
-	{JSON.stringify(nanoContext, null, 2)}
-
 	<div class="mt-5 flex flex-wrap gap-2 mb-4">
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
-		<App />
+		{#each filteredApps as app}
+			{#key app.ID}
+				<App {app} />
+			{/key}
+		{/each}
 	</div>
 {/if}
