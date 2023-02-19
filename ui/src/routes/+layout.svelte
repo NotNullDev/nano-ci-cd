@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import '../app.css';
 	import ButtonBase from '../components/buttonBase.svelte';
 	import LinkBase from '../components/linkBase.svelte';
+	import { logout } from '../logic/common/api';
 	import { authStore } from '../logic/common/store';
 </script>
 
@@ -82,11 +82,7 @@
 						<ButtonBase
 							accent="ghost"
 							on:click={() => {
-								authStore.update((s) => {
-									s.isLoggedIn = false;
-									goto('/login');
-									return s;
-								});
+								logout();
 							}}>Logout</ButtonBase
 						>
 					{/if}

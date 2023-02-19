@@ -5,14 +5,15 @@
 
 # Features
 
-- [ ] Add button that will run docker prune
+- [ ] System management
+  - [ ] Clean builds directory
+  - [ ] Basic statistics about disk, memory, cpu usage
 - [ ] Show current storage usage
 - [ ] Add auto refresh logs
 - [ ] Add sqlite import
 - [ ] Add option to change global build status to none
 
 # Long term plans
-- [ ] mobile support
-- [ ] multiple builds
+- [ ] parallel builds
 - [ ] improved UI
 - [ ] e2e test

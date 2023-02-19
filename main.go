@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -56,6 +57,8 @@ func main() {
 	e.POST("/login", app.Login)
 	e.POST("/update-user", app.UpdateUser)
 	e.GET("/logs", app.GetLogs)
+	e.GET("/available-builds-metadata", app.GetBuilds)
+	e.GET("/build", app.GetBuild)
 	e.GET("/reset-global-build-status", app.ResetGlobalBuildStatus)
 	e.GET("/docker-system-prune", app.DockerSystemPrune)
 
@@ -93,11 +96,6 @@ func prepareDatabase(db *apps.AppsDb) {
 }
 
 func initMiddleware(e *echo.Echo, db *apps.AppsDb) {
-	// e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-	// 	AllowOrigins: []string{"localhost:5173"},
-	// 	AllowHeaders: []string{"*"},
-	// 	AllowMethods: []string{"*"},
-	// }))
 	e.Use(middleware.CORS())
 	e.Use(middleware.Secure())
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -106,7 +104,7 @@ func initMiddleware(e *echo.Echo, db *apps.AppsDb) {
 				return next(c)
 			}
 
-			if c.Path() == "/build" {
+			if c.Path() == "/build" && strings.ToLower(c.Request().Method) == "post" {
 				var config apps.NanoConfig
 				db.First(&config)
 

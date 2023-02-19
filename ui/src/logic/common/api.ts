@@ -33,11 +33,11 @@ export async function nanoFetch(path: string, options?: RequestInit) {
 	const resp = await fetch(fetchUrl, options);
 	console.log('resp', resp);
 
-	if ((isLoggedIn && resp.status === 401) || resp.status === 403) {
-		authStore.update((state) => {
-			state.isLoggedIn = false;
-			state.token = '';
-			return state;
+	if (isLoggedIn && resp.status === 401) {
+		authStore.set({
+			...authStore.get(),
+			isLoggedIn: false,
+			token: ''
 		});
 	}
 
@@ -50,10 +50,10 @@ export async function nanoFetch(path: string, options?: RequestInit) {
 }
 
 export async function logout() {
-	authStore.update((store) => {
-		store.isLoggedIn = false;
-		store.token = '';
-		return store;
+	authStore.set({
+		...authStore.get(),
+		isLoggedIn: false,
+		token: ''
 	});
 }
 

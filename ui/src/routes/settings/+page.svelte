@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import Sidebar from './sidebar.svelte';
+	import ButtonBase from '../../components/buttonBase.svelte';
+	import Sidebar from '../../components/sidebar.svelte';
 
 	let changingSize = false;
 
@@ -32,13 +33,23 @@
 	});
 
 	let panelRef: HTMLDivElement | null = null;
+
+	let openSidebar: () => void | undefined;
 </script>
 
 <svelte:head>
 	<title>Settings</title>
 </svelte:head>
 
-<Sidebar />
+<Sidebar bind:openSidebar>
+	<div>hello!</div>
+</Sidebar>
+
+<ButtonBase
+	on:click={() => {
+		openSidebar();
+	}}>Toggle sidebar</ButtonBase
+>
 
 <div class="flex flex-1 m-4 border border-b">
 	<div class="flex">

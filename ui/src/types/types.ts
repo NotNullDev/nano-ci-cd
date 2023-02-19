@@ -51,3 +51,21 @@ export const NanoContextSchema = z.object({
 });
 
 export type NanoContext = z.infer<typeof NanoContextSchema>;
+
+export const NanoBuildSchema = z.object({
+	ID: z.number(),
+	appId: z.number(),
+	buildStatus: z.string(),
+	startedAt: z.string(),
+	finishedAt: z.string(),
+	logs: z.string()
+});
+
+export type NanoBuild = z.infer<typeof NanoBuildSchema>;
+
+export const BuildMetadata = z.object({
+	id: z.number(),
+	date: z.string()
+});
+
+export type BuildMetadata = z.infer<typeof BuildMetadata>;

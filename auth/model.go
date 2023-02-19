@@ -26,7 +26,7 @@ type NanoSessionData struct {
 }
 
 type NanoBuild struct {
-	gorm.Model  `json:"-"`
+	gorm.Model
 	AppID       uint      `json:"appId"`
 	BuildStatus string    `json:"buildStatus"` // running, failed, success
 	Logs        string    `json:"logs"`

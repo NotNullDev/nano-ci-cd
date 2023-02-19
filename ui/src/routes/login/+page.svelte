@@ -30,21 +30,18 @@
 		<ButtonBase
 			class="mt-2"
 			on:click={async () => {
-				authStore.update((store) => {
-					store.serverUrl = serverUrl;
-					return store;
-				});
+				authStore.setKey('serverUrl', serverUrl);
 
 				await tick();
 
 				const token = await login(username, password);
 
-				authStore.update((store) => {
-					store.username = username;
-					store.serverUrl = serverUrl;
-					store.token = token;
-					store.isLoggedIn = true;
-					return store;
+				authStore.set({
+					...authStore.get(),
+					username: username,
+					serverUrl: serverUrl,
+					token: token,
+					isLoggedIn: true
 				});
 			}}>LOGIN</ButtonBase
 		>

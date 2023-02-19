@@ -1,7 +1,14 @@
 import { get } from 'svelte/store';
-import { AppLogsTypeSchema, type App, type AppLogsType } from '../../types/types';
+import {
+	AppLogsTypeSchema,
+	BuildMetadata,
+	NanoBuildSchema,
+	type App,
+	type AppLogsType
+} from '../../types/types';
 import { nanoFetch } from '../common/api';
 import { indexPageStore } from '../index/store';
+import { detailsPageStore } from './store';
 
 export async function updateApp(app: App) {
 	const res = await nanoFetch('/update-app', {
@@ -43,4 +50,35 @@ export async function fetchLogs(appId: number, limit = 1): Promise<AppLogsType> 
 	const data = AppLogsTypeSchema.parse(await res?.json());
 
 	return data;
+}
+
+export async function getBuild(buildId: number) {
+	const res = await nanoFetch('/build?buildId=' + buildId);
+
+	const data = await res?.json();
+
+	const validatedData = NanoBuildSchema.parse(data);
+
+	return validatedData;
+}
+
+export async function useFetchBuild(buildId: number) {
+	const data = await getBuild(buildId);
+	detailsPageStore.setKey('currentBuild', data);
+}
+
+export async function fetchBuilds(): Promise<BuildMetadata[]> {
+	const res = await nanoFetch('/available-builds-metadata');
+
+	const data = await res?.json();
+
+	const validatedData = data.map((d: any) => BuildMetadata.parse(d)) as BuildMetadata[];
+
+	return validatedData;
+}
+
+export async function useFetchBuilds() {
+	const data = await fetchBuilds();
+	console.log(data);
+	detailsPageStore.setKey('availableBuilds', data);
 }

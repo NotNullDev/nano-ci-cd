@@ -498,6 +498,43 @@ func (appCtx AppContext) GetLogs(c echo.Context) error {
 	return c.JSON(200, logs)
 }
 
+type GetBuildsResponseEntity struct {
+	ID        int64  `json:"id"`
+	StartedAt string `json:"date" gorm:"started_at"`
+}
+
+func (appCtx AppContext) GetBuilds(c echo.Context) error {
+	builds := []GetBuildsResponseEntity{}
+
+	appCtx.Db.Raw("select n.id, n.started_at from nano_builds n order by n.started_at desc").Scan(&builds)
+
+	return c.JSON(200, builds)
+}
+
+func (appCtx AppContext) GetBuild(c echo.Context) error {
+	appId := c.QueryParam("buildId")
+
+	if appId == "" {
+		return c.JSON(400, ErrorResponse{
+			Error: "App ID is required",
+		})
+	}
+
+	idAsInt, err := strconv.ParseInt(appId, 10, 64)
+
+	if err != nil {
+		return c.JSON(400, ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	build := auth.NanoBuild{}
+
+	appCtx.Db.Where("id = ?", idAsInt).First(&build)
+
+	return c.JSON(200, build)
+}
+
 func loadGlobalEnvs(appConfig NanoConfig) error {
 	decoded, err := base64.StdEncoding.DecodeString(appConfig.GlobalEnvironment)
 
