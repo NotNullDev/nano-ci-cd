@@ -1,4 +1,4 @@
-package router
+package api
 
 import (
 	"context"
@@ -8,42 +8,51 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/nano-ci-cd/auth"
-	"github.com/nano-ci-cd/common"
 	"github.com/nano-ci-cd/config"
+	db "github.com/nano-ci-cd/db"
+	logic "github.com/nano-ci-cd/logic"
+	types "github.com/nano-ci-cd/types"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type AppContext struct {
+type Router struct {
 	Echo *echo.Echo
-	Db   *AppsDb
+	db   *db.AppsDb
 }
 
-func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
+func NewRouter(e *echo.Echo, db *db.AppsDb) *Router {
+	return &Router{
+		Echo: e,
+		db:   db,
+	}
+}
+
+func (appCtx Router) HandlePostRequest(c echo.Context) error {
 	// setSSEHeaders(c)
 
-	nanoContext := NanoContext{}
-	appCtx.Db.First(&nanoContext)
+	nanoContext := types.NanoContext{}
+	appCtx.db.First(&nanoContext)
 
 	if nanoContext.CurrentlyBuildingAppId != 0 {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: "another app is currently building",
 		})
 	}
 
-	var appConfig NanoConfig
+	var appConfig types.NanoConfig
 
-	tx := appCtx.Db.First(&appConfig)
+	tx := appCtx.db.First(&appConfig)
 
 	if tx.Error != nil {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: tx.Error.Error(),
 		})
 	}
 
 	if appConfig.Token != c.Request().Header.Get("Authorization") {
-		return c.JSON(403, ErrorResponse{
+		return c.JSON(403, types.ErrorResponse{
 			Error: "invalid token",
 		})
 	}
@@ -51,19 +60,19 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 	appName := c.QueryParam("appName")
 
 	if appName == "" {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: "missing appName",
 		})
 	}
 
-	app := NanoApp{
+	app := types.NanoApp{
 		AppName: appName,
 	}
 
-	tx = appCtx.Db.First(&app, "app_name = ?", appName)
+	tx = appCtx.db.First(&app, "app_name = ?", appName)
 
 	if tx.Error != nil {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: tx.Error.Error(),
 		})
 	}
@@ -71,46 +80,46 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 	print("Found app name " + app.AppName)
 
 	if app.AppStatus != "enabled" {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: "app is disabled",
 		})
 	}
 
 	c.JSON(200, "")
 	buildContext := context.Background()
-	buildContext = context.WithValue(buildContext, contextKey, &app)
+	buildContext = context.WithValue(buildContext, types.CurrentNanoAppContextKey, &app)
 
 	err := loadGlobalEnvs(appConfig)
 
 	if err != nil {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: err.Error(),
 		})
 	}
 	logsChan := make(chan string)
 	done := make(chan bool)
 
-	savedBuff := []string{}
+	savedbuff := []string{}
 	go func() {
-		build := &auth.NanoBuild{
+		build := &types.NanoBuild{
 			AppID:       app.ID,
 			StartedAt:   time.Now(),
 			BuildStatus: "running",
 		}
-		appCtx.Db.Create(&build)
+		appCtx.db.Create(&build)
 
-		buildContext = context.WithValue(buildContext, currentAppBuildKey, build)
+		buildContext = context.WithValue(buildContext, types.CurrentNanoBuildContextKey, build)
 
 		{
-			appCtx.Db.First(&nanoContext)
+			appCtx.db.First(&nanoContext)
 			nanoContext.CurrentlyBuildingAppId = app.ID
-			appCtx.Db.Save(&nanoContext)
+			appCtx.db.Save(&nanoContext)
 		}
 
 		defer func() {
-			appCtx.Db.First(&nanoContext)
+			appCtx.db.First(&nanoContext)
 			nanoContext.CurrentlyBuildingAppId = 0
-			appCtx.Db.Save(&nanoContext)
+			appCtx.db.Save(&nanoContext)
 		}()
 
 		go func() {
@@ -119,9 +128,9 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 				select {
 				case log := <-logsChan:
 					// c.Response().Write([]byte(log))
-					// savedBuff = append(savedBuff, log)
+					// savedbuff = append(savedbuff, log)
 					build.Logs = build.Logs + log
-					appCtx.Db.Save(&build)
+					appCtx.db.Save(&build)
 					// os.Stderr.Write([]byte("haha: " + log + "\n"))
 				case <-done:
 					break outer
@@ -129,7 +138,7 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 			}
 		}()
 
-		buildContext, err := Build(buildContext, appCtx.Db, logsChan)
+		buildContext, err := logic.Build(buildContext, appCtx.db, logsChan)
 
 		if err != nil {
 			println(err.Error())
@@ -139,30 +148,30 @@ func (appCtx AppContext) HandlePostRequest(c echo.Context) error {
 			build.BuildStatus = "success"
 		}
 
-		appCtx.Db.Save(&build)
+		appCtx.db.Save(&build)
 
 		buildContext.SaveLogs()
 		done <- true
-		println("haha saved buf: ", savedBuff)
+		println("haha saved buf: ", savedbuff)
 	}()
 
 	return c.JSON(200, "")
 }
 
-func (appCtx AppContext) GetNanoContext(c echo.Context) error {
-	var apps NanoContext
+func (appCtx Router) GetNanoContext(c echo.Context) error {
+	var apps types.NanoContext
 
-	appCtx.Db.Preload("NanoConfig").Preload("Apps").Find(&apps)
+	appCtx.db.Preload("NanoConfig").Preload("Apps").Find(&apps)
 
 	return c.JSON(200, apps)
 }
 
-func (appCtx AppContext) ResetToken(c echo.Context) error {
+func (appCtx Router) ResetToken(c echo.Context) error {
 	token := uuid.NewString()
 
-	nanoConfig := NanoConfig{}
+	nanoConfig := types.NanoConfig{}
 
-	tx := appCtx.Db.First(&nanoConfig)
+	tx := appCtx.db.First(&nanoConfig)
 
 	if tx.Error != nil {
 		return tx.Error
@@ -170,7 +179,7 @@ func (appCtx AppContext) ResetToken(c echo.Context) error {
 
 	nanoConfig.Token = token
 
-	appCtx.Db.Save(&nanoConfig)
+	appCtx.db.Save(&nanoConfig)
 
 	return c.JSON(200, token)
 }
@@ -179,26 +188,26 @@ type CreateAppRequest struct {
 	AppName string `json:"appName"`
 }
 
-func (appCtx common.AppContext) CreateApp(c echo.Context) error {
+func (appCtx Router) CreateApp(c echo.Context) error {
 	var req CreateAppRequest
 	c.Bind(&req)
 
 	if req.AppName == "" {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: "App name is required",
 		})
 	}
 
-	app := &NanoApp{
+	app := &types.NanoApp{
 		AppName:       req.AppName,
 		NanoContextID: 1,
 		AppStatus:     "enabled",
 	}
 
-	tx := appCtx.Db.Create(app)
+	tx := appCtx.db.Create(app)
 
 	if tx.Error != nil {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: tx.Error.Error(),
 		})
 	}
@@ -206,12 +215,12 @@ func (appCtx common.AppContext) CreateApp(c echo.Context) error {
 	return c.JSON(200, app)
 }
 
-func (appCtx AppContext) UpdateApp(c echo.Context) error {
-	var req NanoApp
+func (appCtx Router) UpdateApp(c echo.Context) error {
+	var req types.NanoApp
 	err := c.Bind(&req)
 
 	if err != nil {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: err.Error(),
 		})
 	}
@@ -220,10 +229,10 @@ func (appCtx AppContext) UpdateApp(c echo.Context) error {
 	req.BuildVal = base64.StdEncoding.EncodeToString([]byte(req.BuildVal))
 	req.EnvVal = base64.StdEncoding.EncodeToString([]byte(req.EnvVal))
 
-	tx := appCtx.Db.Save(&req)
+	tx := appCtx.db.Save(&req)
 
 	if tx.Error != nil {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: tx.Error.Error(),
 		})
 	}
@@ -231,11 +240,11 @@ func (appCtx AppContext) UpdateApp(c echo.Context) error {
 	return c.JSON(200, req)
 }
 
-func (appCtx AppContext) DeleteApp(c echo.Context) error {
+func (appCtx Router) DeleteApp(c echo.Context) error {
 	appId := c.QueryParam("id")
 
 	if appId == "" {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: "App ID is required",
 		})
 	}
@@ -243,15 +252,15 @@ func (appCtx AppContext) DeleteApp(c echo.Context) error {
 	idAsInt, err := strconv.ParseInt(appId, 10, 64)
 
 	if err != nil {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: err.Error(),
 		})
 	}
 
-	tx := appCtx.Db.Delete(&NanoApp{}, idAsInt)
+	tx := appCtx.db.Delete(&types.NanoApp{}, idAsInt)
 
 	if tx.Error != nil {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: tx.Error.Error(),
 		})
 	}
@@ -264,7 +273,7 @@ type UpdateUserRequest struct {
 	Password string `json:"password"`
 }
 
-func (appCtx AppContext) UpdateUser(c echo.Context) error {
+func (appCtx Router) UpdateUser(c echo.Context) error {
 	token := c.Request().Header.Get("nano-token")
 
 	var req UpdateUserRequest
@@ -272,29 +281,29 @@ func (appCtx AppContext) UpdateUser(c echo.Context) error {
 	err := c.Bind(&req)
 
 	if err != nil {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: err.Error(),
 		})
 	}
 
-	session := &auth.NanoSession{
+	session := &types.NanoSession{
 		Token: token,
 	}
 
-	appCtx.Db.First(&session)
+	appCtx.db.First(&session)
 
 	if session.ID == 0 {
-		return c.JSON(403, ErrorResponse{
+		return c.JSON(403, types.ErrorResponse{
 			Error: "Invalid token",
 		})
 	}
 
-	user := &auth.NanoUser{}
+	user := &types.NanoUser{}
 
-	appCtx.Db.First(&user, session.NanoUserID)
+	appCtx.db.First(&user, session.NanoUserID)
 
 	if user.ID == 0 {
-		return c.JSON(403, ErrorResponse{
+		return c.JSON(403, types.ErrorResponse{
 			Error: "Invalid token",
 		})
 	}
@@ -303,17 +312,17 @@ func (appCtx AppContext) UpdateUser(c echo.Context) error {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 
 	if err != nil {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: err.Error(),
 		})
 	}
 
 	user.Password = string(hashed)
 
-	tx := appCtx.Db.Save(&user)
+	tx := appCtx.db.Save(&user)
 
 	if tx.Error != nil {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: tx.Error.Error(),
 		})
 	}
@@ -326,24 +335,24 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func (appCtx AppContext) Login(c echo.Context) error {
+func (appCtx Router) Login(c echo.Context) error {
 	var req LoginRequest
 	c.Bind(&req)
 
 	if req.Username == "" || req.Password == "" {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: "Username or password is empty",
 		})
 	}
 
-	user := auth.NanoUser{
+	user := types.NanoUser{
 		Username: req.Username,
 	}
 
-	appCtx.Db.First(&user)
+	appCtx.db.First(&user)
 
 	if user.ID == 0 {
-		return c.JSON(403, ErrorResponse{
+		return c.JSON(403, types.ErrorResponse{
 			Error: "Invalid username or password",
 		})
 	}
@@ -351,7 +360,7 @@ func (appCtx AppContext) Login(c echo.Context) error {
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 
 	if err != nil {
-		return c.JSON(403, ErrorResponse{
+		return c.JSON(403, types.ErrorResponse{
 			Error: "Invalid username or password",
 		})
 	}
@@ -359,20 +368,20 @@ func (appCtx AppContext) Login(c echo.Context) error {
 	token, err := auth.CreateToken()
 
 	if err != nil {
-		return c.JSON(500, ErrorResponse{
+		return c.JSON(500, types.ErrorResponse{
 			Error: err.Error(),
 		})
 	}
 
-	session := &auth.NanoSession{
+	session := &types.NanoSession{
 		Token:      token,
 		NanoUserID: user.ID,
 	}
 
-	tx := appCtx.Db.Save(&session)
+	tx := appCtx.db.Save(&session)
 
 	if tx.Error != nil {
-		return c.JSON(500, ErrorResponse{
+		return c.JSON(500, types.ErrorResponse{
 			Error: "",
 		})
 	}
@@ -380,11 +389,11 @@ func (appCtx AppContext) Login(c echo.Context) error {
 	return c.JSON(200, token)
 }
 
-func (appCtx AppContext) GetLogs(c echo.Context) error {
+func (appCtx Router) GetLogs(c echo.Context) error {
 	appId := c.QueryParam("appId")
 
 	if appId == "" {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: "App ID is required",
 		})
 	}
@@ -392,17 +401,17 @@ func (appCtx AppContext) GetLogs(c echo.Context) error {
 	idAsInt, err := strconv.ParseInt(appId, 10, 64)
 
 	if err != nil {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: err.Error(),
 		})
 	}
 
-	logs := &auth.NanoBuild{}
+	logs := &types.NanoBuild{}
 
-	appCtx.Db.Order("id desc").Where("app_id = ?", idAsInt).Find(&logs).Limit(1)
+	appCtx.db.Order("id desc").Where("app_id = ?", idAsInt).Find(&logs).Limit(1)
 
 	if logs.ID == 0 {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: "Logs for the requested app not found",
 		})
 	}
@@ -415,19 +424,19 @@ type GetBuildsResponseEntity struct {
 	StartedAt string `json:"date" gorm:"started_at"`
 }
 
-func (appCtx AppContext) GetBuilds(c echo.Context) error {
+func (appCtx Router) GetBuilds(c echo.Context) error {
 	builds := []GetBuildsResponseEntity{}
 
-	appCtx.Db.Raw("select n.id, n.started_at from nano_builds n order by n.started_at desc").Scan(&builds)
+	appCtx.db.Raw("select n.id, n.started_at from nano_builds n order by n.started_at desc").Scan(&builds)
 
 	return c.JSON(200, builds)
 }
 
-func (appCtx AppContext) GetBuild(c echo.Context) error {
+func (appCtx Router) GetBuild(c echo.Context) error {
 	appId := c.QueryParam("buildId")
 
 	if appId == "" {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: "App ID is required",
 		})
 	}
@@ -435,19 +444,19 @@ func (appCtx AppContext) GetBuild(c echo.Context) error {
 	idAsInt, err := strconv.ParseInt(appId, 10, 64)
 
 	if err != nil {
-		return c.JSON(400, ErrorResponse{
+		return c.JSON(400, types.ErrorResponse{
 			Error: err.Error(),
 		})
 	}
 
-	build := auth.NanoBuild{}
+	build := types.NanoBuild{}
 
-	appCtx.Db.Where("id = ?", idAsInt).First(&build)
+	appCtx.db.Where("id = ?", idAsInt).First(&build)
 
 	return c.JSON(200, build)
 }
 
-func loadGlobalEnvs(appConfig NanoConfig) error {
+func loadGlobalEnvs(appConfig types.NanoConfig) error {
 	decoded, err := base64.StdEncoding.DecodeString(appConfig.GlobalEnvironment)
 
 	if err != nil {

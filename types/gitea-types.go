@@ -1,4 +1,4 @@
-package apps
+package types
 
 type GiteaHook struct {
 	Secret     string `json:"secret"`

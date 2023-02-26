@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nano-ci-cd/auth"
 	"github.com/nano-ci-cd/config"
+	db "github.com/nano-ci-cd/db"
+	types "github.com/nano-ci-cd/types"
 	"github.com/nano-ci-cd/util"
 )
 
@@ -22,11 +23,11 @@ const (
 
 type SingleBuildContext struct {
 	Context    *context.Context
-	Db         *AppsDb
+	Db         *db.AppsDb
 	LogsWriter *AppLogsWriter
 }
 
-func Build(buildContext context.Context, db *AppsDb, logsChan chan string) (SingleBuildContext, error) {
+func Build(buildContext context.Context, db *db.AppsDb, logsChan chan string) (SingleBuildContext, error) {
 	appWriter := &AppLogsWriter{
 		Logs:     "",
 		LogsChan: logsChan,
@@ -99,7 +100,7 @@ func (appBuildContext *SingleBuildContext) SaveLogs() error {
 	return appBuildContext.Db.Save(&build).Error
 }
 
-func (appBuildContext *SingleBuildContext) prepareEnvAndBuildArguments(buildContext context.Context, db *AppsDb) error {
+func (appBuildContext *SingleBuildContext) prepareEnvAndBuildArguments(buildContext context.Context, db *db.AppsDb) error {
 	app := mustGetAppFromContext(buildContext)
 	os.Setenv("APP_NAME", app.AppName)
 
@@ -243,7 +244,7 @@ func (appBuildContext *SingleBuildContext) cloneRepo(buildContext context.Contex
 	return nil
 }
 
-func loadBase64EnvFileIntoEnv(buildContext context.Context, db *AppsDb) error {
+func loadBase64EnvFileIntoEnv(buildContext context.Context, db *db.AppsDb) error {
 	app := mustGetAppFromContext(buildContext)
 
 	if app.EnvVal != "" {
@@ -257,8 +258,8 @@ func loadBase64EnvFileIntoEnv(buildContext context.Context, db *AppsDb) error {
 	return nil
 }
 
-func mustGetAppFromContext(ctx context.Context) *NanoApp {
-	app, ok := ctx.Value(contextKey).(*NanoApp)
+func mustGetAppFromContext(ctx context.Context) *types.NanoApp {
+	app, ok := ctx.Value(types.CurrentNanoAppContextKey).(*types.NanoApp)
 
 	if !ok {
 		panic("could not get app from context")
@@ -267,8 +268,8 @@ func mustGetAppFromContext(ctx context.Context) *NanoApp {
 	return app
 }
 
-func mustGetAppBuildFromContext(ctx context.Context) *auth.NanoBuild {
-	build, ok := ctx.Value(currentAppBuildKey).(*auth.NanoBuild)
+func mustGetAppBuildFromContext(ctx context.Context) *types.NanoBuild {
+	build, ok := ctx.Value(types.CurrentNanoBuildContextKey).(*types.NanoBuild)
 
 	if !ok {
 		panic("could not get build from context")

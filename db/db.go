@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/glebarez/sqlite"
-	"github.com/nano-ci-cd/auth"
+	"github.com/nano-ci-cd/types"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -27,43 +27,43 @@ func NewAppsDatabase() (*AppsDb, error) {
 }
 
 func (db AppsDb) AutoMigrateModels() error {
-	err := db.AutoMigrate(&NanoApp{})
+	err := db.AutoMigrate(&types.NanoApp{})
 
 	if err != nil {
 		return err
 	}
 
-	err = db.AutoMigrate(&NanoConfig{})
+	err = db.AutoMigrate(&types.NanoConfig{})
 
 	if err != nil {
 		return err
 	}
 
-	err = db.AutoMigrate(&NanoContext{})
+	err = db.AutoMigrate(&types.NanoContext{})
 
 	if err != nil {
 		return err
 	}
 
-	err = db.AutoMigrate(&auth.NanoUser{})
+	err = db.AutoMigrate(&types.NanoUser{})
 
 	if err != nil {
 		return err
 	}
 
-	err = db.AutoMigrate(&auth.NanoSession{})
+	err = db.AutoMigrate(&types.NanoSession{})
 
 	if err != nil {
 		return err
 	}
 
-	err = db.AutoMigrate(&auth.NanoSessionData{})
+	err = db.AutoMigrate(&types.NanoSessionData{})
 
 	if err != nil {
 		return err
 	}
 
-	err = db.AutoMigrate(&auth.NanoBuild{})
+	err = db.AutoMigrate(&types.NanoBuild{})
 
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func (db AppsDb) AutoMigrateModels() error {
 func (db AppsDb) InitConfig() error {
 	token := "62285a21-547d-46db-a9fd-a2fec5161da5" // hardcoded initial token on both server and client
 
-	var any NanoContext
+	var any types.NanoContext
 	db.First(&any)
 
 	if any.ID != 0 {
@@ -88,9 +88,9 @@ func (db AppsDb) InitConfig() error {
 		token = initToken
 	}
 
-	tx := db.Create(&NanoContext{
-		Apps: []NanoApp{},
-		NanoConfig: NanoConfig{
+	tx := db.Create(&types.NanoContext{
+		Apps: []types.NanoApp{},
+		NanoConfig: types.NanoConfig{
 			GlobalEnvironment: "",
 			Token:             token,
 		},
@@ -100,7 +100,7 @@ func (db AppsDb) InitConfig() error {
 }
 
 func (db AppsDb) InitUser() error {
-	var any auth.NanoUser
+	var any types.NanoUser
 	db.First(&any)
 
 	if any.ID != 0 {
@@ -124,7 +124,7 @@ func (db AppsDb) InitUser() error {
 		return err
 	}
 
-	tx := db.Create(&auth.NanoUser{
+	tx := db.Create(&types.NanoUser{
 		Username: username,
 		Password: string(hash),
 	})

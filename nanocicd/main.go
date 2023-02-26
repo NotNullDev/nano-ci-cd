@@ -1,7 +1,11 @@
 package nanocicd
 
-import "github.com/labstack/echo/v4"
+import (
+	api "github.com/nano-ci-cd/api"
+	db "github.com/nano-ci-cd/db"
+)
 
 type NanoCiCD struct {
-	Api *
+	Router *api.Router
+	Db     *db.AppsDb
 }

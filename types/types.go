@@ -1,9 +1,17 @@
-package models
+package types
 
 import (
 	"time"
 
 	"gorm.io/gorm"
+)
+
+type NanoAppContextKey string
+type NanoBuildContextKey string
+
+var (
+	CurrentNanoAppContextKey   NanoAppContextKey   = "nanoAppContext"
+	CurrentNanoBuildContextKey NanoBuildContextKey = "nanoBuildContext"
 )
 
 type NanoConfig struct {
